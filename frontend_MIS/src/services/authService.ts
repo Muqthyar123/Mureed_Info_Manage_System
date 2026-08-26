@@ -13,6 +13,7 @@ import type {
   MockAdminUser,
   PendingAdminSignup,
 } from "@/types";
+import { apiEnabled, apiRequest, persistToken } from "@/services/apiClient";
 
 /**
  * Centralized mock authentication. Replace the bodies of these functions with
@@ -135,6 +136,14 @@ function upsertApprovalRequest(
 }
 
 export async function loginAdmin(email: string, password: string): Promise<AuthUser> {
+  if (apiEnabled) {
+    const result = await apiRequest<{ user: AuthUser; accessToken: string }>("/auth/admin/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+    persistToken(result.accessToken);
+    return result.user;
+  }
   await latency();
   const normalized = normalizeEmail(email);
   const users = await readAdminUsers();
@@ -156,6 +165,14 @@ export async function loginAdmin(email: string, password: string): Promise<AuthU
 }
 
 export async function loginMureed(email: string, password: string): Promise<AuthUser> {
+  if (apiEnabled) {
+    const result = await apiRequest<{ user: AuthUser; accessToken: string }>("/auth/mureed/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+    persistToken(result.accessToken);
+    return result.user;
+  }
   await latency();
   const mureed = await getMureedByEmail(email.trim());
   if (!mureed || password !== MUREED_PASSWORD) {
@@ -171,11 +188,25 @@ export async function loginMureed(email: string, password: string): Promise<Auth
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {
+  if (apiEnabled) {
+    await apiRequest<void>("/auth/password-reset", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+    return;
+  }
   await latency(400);
   if (!email.trim()) throw new Error("Please enter your email address.");
 }
 
 export async function completeAccountSetup(email: string, password: string): Promise<void> {
+  if (apiEnabled) {
+    await apiRequest<void>("/auth/mureed/setup", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+    return;
+  }
   await latency(500);
   if (password.length < 8) throw new Error("Password must be at least 8 characters.");
   if (!email) throw new Error("Setup link is invalid.");
@@ -186,6 +217,12 @@ export async function startAdminSignup(
   email: string,
   password: string,
 ): Promise<PendingAdminSignup> {
+  if (apiEnabled) {
+    return apiRequest<PendingAdminSignup>("/auth/admin/signup/start", {
+      method: "POST",
+      body: JSON.stringify({ name, email, password }),
+    });
+  }
   await latency(400);
   return {
     name: name.trim(),
@@ -199,6 +236,16 @@ export async function verifyAdminSignupOtp(
   signup: PendingAdminSignup,
   otp: string,
 ): Promise<{ status: "ACTIVE"; user: AuthUser } | { status: "PENDING" } | { status: "REJECTED" }> {
+  if (apiEnabled) {
+    const result = await apiRequest<
+      { status: "ACTIVE"; user: AuthUser; accessToken: string } | { status: "PENDING" } | { status: "REJECTED" }
+    >("/auth/admin/signup/verify", {
+      method: "POST",
+      body: JSON.stringify({ signup, otp }),
+    });
+    if (result.status === "ACTIVE") persistToken(result.accessToken);
+    return result;
+  }
   await latency(400);
   if (Date.now() > signup.expiresAt) throw new Error("OTP has expired. Please request a new OTP.");
   if (otp !== MOCK_OTP) throw new Error("Invalid OTP. Please try again.");
@@ -235,11 +282,25 @@ export async function verifyAdminSignupOtp(
 export async function resendAdminSignupOtp(
   signup: PendingAdminSignup,
 ): Promise<PendingAdminSignup> {
+  if (apiEnabled) {
+    return apiRequest<PendingAdminSignup>("/auth/admin/signup/resend", {
+      method: "POST",
+      body: JSON.stringify(signup),
+    });
+  }
   await latency(300);
   return { ...signup, expiresAt: Date.now() + MOCK_OTP_TTL_MS };
 }
 
 export async function loginAdminWithGoogle(email: string): Promise<AuthUser> {
+  if (apiEnabled) {
+    const result = await apiRequest<{ user: AuthUser; accessToken: string }>("/auth/admin/google", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+    persistToken(result.accessToken);
+    return result.user;
+  }
   await latency(500);
   const normalized = normalizeEmail(email);
   if (!normalized) throw new Error("Please enter a mock Google email.");
@@ -284,11 +345,16 @@ export async function loginAdminWithGoogle(email: string): Promise<AuthUser> {
 }
 
 export async function listAdminApprovalRequests(): Promise<AdminApprovalRequest[]> {
+  if (apiEnabled) return apiRequest<AdminApprovalRequest[]>("/auth/admin/approval-requests");
   await latency(250);
   return readApprovalRequests();
 }
 
 export async function approveAdminRequest(requestId: string): Promise<void> {
+  if (apiEnabled) {
+    await apiRequest<void>(`/auth/admin/approval-requests/${requestId}/approve`, { method: "POST" });
+    return;
+  }
   await latency(300);
   const requests = readApprovalRequests();
   const request = requests.find((r) => r.id === requestId);
@@ -317,6 +383,10 @@ export async function approveAdminRequest(requestId: string): Promise<void> {
 }
 
 export async function rejectAdminRequest(requestId: string): Promise<void> {
+  if (apiEnabled) {
+    await apiRequest<void>(`/auth/admin/approval-requests/${requestId}/reject`, { method: "POST" });
+    return;
+  }
   await latency(300);
   const requests = readApprovalRequests();
   const request = requests.find((r) => r.id === requestId);
@@ -336,7 +406,10 @@ export async function rejectAdminRequest(requestId: string): Promise<void> {
 export function persistUser(user: AuthUser | null) {
   if (typeof window === "undefined") return;
   if (user) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-  else window.localStorage.removeItem(STORAGE_KEY);
+  else {
+    window.localStorage.removeItem(STORAGE_KEY);
+    persistToken(null);
+  }
 }
 
 export function readPersistedUser(): AuthUser | null {
