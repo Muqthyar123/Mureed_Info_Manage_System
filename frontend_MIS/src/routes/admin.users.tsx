@@ -37,6 +37,7 @@ import {
   resendSetupEmail,
   setAccountStatus,
 } from "@/services/userService";
+import { MAIN_ADMIN_EMAIL } from "@/services/authService";
 import type { AppUser } from "@/types";
 import { formatDate } from "@/utils/age";
 
@@ -151,7 +152,7 @@ function UserManagement() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                              disabled={u.accountStatus === "Active"}
+                              disabled={u.accountStatus === "Active" || u.email.toLowerCase() === MAIN_ADMIN_EMAIL.toLowerCase()}
                               onClick={async () => {
                                 await setAccountStatus(u.id, "Active");
                                 toast.success("Account activated", { description: u.email });
@@ -161,7 +162,7 @@ function UserManagement() {
                               Activate account
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              disabled={u.accountStatus === "Inactive"}
+                              disabled={u.accountStatus === "Inactive" || u.email.toLowerCase() === MAIN_ADMIN_EMAIL.toLowerCase()}
                               onClick={async () => {
                                 await setAccountStatus(u.id, "Inactive");
                                 toast.success("Account deactivated", { description: u.email });

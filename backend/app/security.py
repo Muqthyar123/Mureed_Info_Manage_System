@@ -82,16 +82,43 @@ def current_user(
 
 
 def require_admin(user: models.UserAccount = Depends(current_user)) -> models.UserAccount:
-    if user.role != "Admin":
+    if user.role not in ("Admin", "SUPER_ADMIN", "SUB_ADMIN"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required.")
     if user.account_status != "Active" or user.admin_access_status != "ACTIVE":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Active Admin access required.")
     return user
 
 
-def require_main_admin(user: models.UserAccount = Depends(current_user)) -> models.UserAccount:
-    if user.role != "Admin" or user.admin_role != "MAIN_ADMIN":
+def require_super_admin(user: models.UserAccount = Depends(current_user)) -> models.UserAccount:
+    settings = get_settings()
+    is_main_super = (
+        user.admin_role in ("MAIN_ADMIN", "SUPER_ADMIN")
+        or user.email.lower() == settings.main_admin_email.lower()
+    )
+    if user.role not in ("Admin", "SUPER_ADMIN") or not is_main_super:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Main Admin access required.")
     if user.account_status != "Active" or user.admin_access_status != "ACTIVE":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Active Main Admin access required.")
     return user
+
+
+
+def require_main_admin(user: models.UserAccount = Depends(current_user)) -> models.UserAccount:
+    return require_super_admin(user)
+
+
+def require_sub_admin(user: models.UserAccount = Depends(current_user)) -> models.UserAccount:
+    if user.role not in ("Admin", "SUPER_ADMIN", "SUB_ADMIN"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sub Admin access required.")
+    if user.account_status != "Active" or user.admin_access_status != "ACTIVE":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Active Sub Admin access required.")
+    return user
+
+
+def require_mureed(user: models.UserAccount = Depends(current_user)) -> models.UserAccount:
+    if user.role != "Mureed":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Mureed access required.")
+    if user.account_status != "Active":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Active Mureed account required.")
+    return user
+

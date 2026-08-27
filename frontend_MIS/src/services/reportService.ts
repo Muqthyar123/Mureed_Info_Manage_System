@@ -1,7 +1,4 @@
-import { PEERS, mureedStore } from "@/mock/mureeds";
-import { apiEnabled, apiRequest } from "@/services/apiClient";
-
-const latency = (ms = 200) => new Promise((r) => setTimeout(r, ms));
+import { apiRequest } from "@/services/apiClient";
 
 export interface OverviewStats {
   totalMureeds: number;
@@ -11,14 +8,7 @@ export interface OverviewStats {
 }
 
 export async function getOverviewStats(): Promise<OverviewStats> {
-  if (apiEnabled) return apiRequest<OverviewStats>("/reports/overview");
-  await latency();
-  return {
-    totalMureeds: mureedStore.length,
-    availableMureeds: mureedStore.filter((m) => m.status === "Available").length,
-    passedOutMureeds: mureedStore.filter((m) => m.status === "Passed Out").length,
-    totalPeer: PEERS.length,
-  };
+  return apiRequest<OverviewStats>("/reports/overview");
 }
 
 export interface PeerBreakdown {
@@ -29,15 +19,5 @@ export interface PeerBreakdown {
 }
 
 export async function getMureedsByPeer(): Promise<PeerBreakdown[]> {
-  if (apiEnabled) return apiRequest<PeerBreakdown[]>("/reports/mureeds-by-peer");
-  await latency();
-  return PEERS.map((m) => {
-    const rows = mureedStore.filter((x) => x.peerName === m.name);
-    return {
-      peerName: m.name,
-      total: rows.length,
-      available: rows.filter((r) => r.status === "Available").length,
-      passedOut: rows.filter((r) => r.status === "Passed Out").length,
-    };
-  });
+  return apiRequest<PeerBreakdown[]>("/reports/mureeds-by-peer");
 }

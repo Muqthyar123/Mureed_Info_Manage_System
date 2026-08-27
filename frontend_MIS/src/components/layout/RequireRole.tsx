@@ -8,19 +8,27 @@ export function RequireRole({ role, children }: { role: UserRole; children: Reac
   const { user, ready } = useAuth();
   const navigate = useNavigate();
 
+  const isAllowed = Boolean(
+    user && (
+      role === "Admin"
+        ? ["Admin", "SUB_ADMIN", "SUPER_ADMIN", "MAIN_ADMIN"].includes(user.role)
+        : ["Mureed", "MUREED"].includes(user.role)
+    )
+  );
+
   useEffect(() => {
     if (!ready) return;
     if (!user) {
-      navigate({ to: role === "Admin" ? "/admin-login" : "/mureed-login", replace: true });
-    } else if (user.role !== role) {
-      navigate({
-        to: user.role === "Admin" ? "/admin/dashboard" : "/mureed/dashboard",
-        replace: true,
-      });
+      navigate({ to: role === "Admin" ? "/sub-admin-login" : "/mureed-login", replace: true });
+    } else if (!isAllowed) {
+      const target = ["Admin", "SUB_ADMIN", "SUPER_ADMIN", "MAIN_ADMIN"].includes(user.role)
+        ? "/admin/dashboard"
+        : "/mureed/dashboard";
+      navigate({ to: target, replace: true });
     }
-  }, [ready, user, role, navigate]);
+  }, [ready, user, role, isAllowed, navigate]);
 
-  if (!ready || !user || user.role !== role) {
+  if (!ready || !user || !isAllowed) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">Checking access…</p>

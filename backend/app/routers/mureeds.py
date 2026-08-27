@@ -137,6 +137,12 @@ def get_mureed(mureed_id: str, user: models.UserAccount = Depends(current_user),
     return mureed_out(row)
 
 
+from ..services import email_service
+from ..config import get_settings
+from ..supabase_auth import SupabaseAuthClient
+from ..security import hash_password
+
+
 @router.post("", response_model=schemas.MureedOut)
 def create_mureed(input: schemas.MureedBase, _: models.UserAccount = Depends(require_admin), db: Session = Depends(get_db)):
     peer = db.scalar(select(models.Peer).where(models.Peer.name == input.peerName))
@@ -144,8 +150,9 @@ def create_mureed(input: schemas.MureedBase, _: models.UserAccount = Depends(req
     if existing:
         raise conflict("Mureed with this email already exists.")
     next_number = (db.scalar(select(func.count(models.Mureed.id))) or 0) + 1
+    mureed_id = f"MRD-{next_number:05d}"
     row = models.Mureed(
-        id=f"MRD-{next_number:05d}",
+        id=mureed_id,
         name=input.name.strip(),
         date_of_birth=input.dateOfBirth,
         gender=input.gender,
@@ -157,13 +164,59 @@ def create_mureed(input: schemas.MureedBase, _: models.UserAccount = Depends(req
         status=input.status,
     )
     db.add(row)
+
+    # Create associated Mureed Auth User Account
+    default_pw = "@Mureed_123"
+    user_id = f"usr-{mureed_id}"
+    settings = get_settings()
+
+    if settings.use_supabase_auth:
+        client = SupabaseAuthClient(settings)
+        try:
+            res = client.sign_up_with_password(input.email, default_pw, data={"name": input.name.strip(), "role": "Mureed", "mureed_id": mureed_id})
+            supabase_user = res.get("user", {})
+            if supabase_user.get("id"):
+                user_id = supabase_user["id"]
+        except Exception:
+            pass
+
+    user_acc = models.UserAccount(
+        id=user_id,
+        name=input.name.strip(),
+        email=input.email,
+        role="Mureed",
+        account_status="Active",
+        created_date=input.dateOfBirth[:10] if len(input.dateOfBirth) >= 10 else "2026-01-01",
+        mureed_id=mureed_id,
+        auth_methods="password",
+        password_hash=hash_password(default_pw) if not settings.use_supabase_auth else None,
+    )
+    db.add(user_acc)
+
     try:
         db.commit()
     except IntegrityError as exc:
         db.rollback()
         raise conflict("Mureed with this email already exists.") from exc
     db.refresh(row)
+
+    # Send Brevo Welcome Email
+    email_service.send_mureed_welcome_email(row.email, row.name, initial_password=default_pw)
+
     return mureed_out(row)
+
+
+@router.post("/{mureed_id}/resend-invitation", status_code=200)
+def resend_mureed_invitation(mureed_id: str, _: models.UserAccount = Depends(require_admin), db: Session = Depends(get_db)):
+    row = db.get(models.Mureed, mureed_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Mureed not found")
+    
+    default_pw = "@Mureed_123"
+    sent = email_service.send_mureed_welcome_email(row.email, row.name, initial_password=default_pw)
+    if not sent:
+        raise HTTPException(status_code=500, detail="Could not send invitation email via Brevo.")
+    return {"message": f"Invitation email resent successfully to {row.email}."}
 
 
 @router.put("/{mureed_id}", response_model=schemas.MureedOut)
@@ -206,3 +259,4 @@ def delete_mureed(mureed_id: str, _: models.UserAccount = Depends(require_admin)
             db.delete(user)
         db.delete(row)
         db.commit()
+

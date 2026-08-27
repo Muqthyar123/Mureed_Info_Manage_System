@@ -37,7 +37,7 @@ def create_mureed_account(input: schemas.CreateMureedAccountIn, _: models.UserAc
         name=input.name,
         email=input.email,
         role="Mureed",
-        account_status="Pending Setup",
+        account_status="Active",
         created_date=date.today().isoformat(),
         mureed_id=input.mureedId,
     )
@@ -51,13 +51,17 @@ def create_mureed_account(input: schemas.CreateMureedAccountIn, _: models.UserAc
 
 
 @router.patch("/{user_id}/status", response_model=schemas.AppUserOut | None)
-def set_account_status(user_id: str, input: schemas.AccountStatusIn, _: models.UserAccount = Depends(require_admin), db: Session = Depends(get_db)):
+def set_account_status(user_id: str, input: schemas.AccountStatusIn, current_user: models.UserAccount = Depends(require_admin), db: Session = Depends(get_db)):
     row = db.get(models.UserAccount, user_id)
     if row:
-        if row.admin_role == "MAIN_ADMIN" and input.accountStatus != "Active":
+        settings = get_settings()
+        is_target_super_admin = row.admin_role in ("MAIN_ADMIN", "SUPER_ADMIN") or row.email.lower() == settings.main_admin_email.lower()
+        if is_target_super_admin and current_user.admin_role not in ("MAIN_ADMIN", "SUPER_ADMIN"):
+            raise HTTPException(status_code=403, detail="Sub Admins cannot modify Super Admin accounts.")
+        if row.admin_role in ("MAIN_ADMIN", "SUPER_ADMIN") and input.accountStatus != "Active":
             active_main_admins = db.scalar(
                 select(func.count(models.UserAccount.id)).where(
-                    models.UserAccount.admin_role == "MAIN_ADMIN",
+                    models.UserAccount.admin_role.in_(["MAIN_ADMIN", "SUPER_ADMIN"]),
                     models.UserAccount.account_status == "Active",
                     models.UserAccount.admin_access_status == "ACTIVE",
                     models.UserAccount.id != row.id,
@@ -79,10 +83,14 @@ def resend_setup_email(user_id: str, _: models.UserAccount = Depends(require_adm
 
 
 @router.delete("/{user_id}", status_code=204)
-def delete_user(user_id: str, _: models.UserAccount = Depends(require_admin), db: Session = Depends(get_db)):
+def delete_user(user_id: str, current_user: models.UserAccount = Depends(require_admin), db: Session = Depends(get_db)):
     row = db.get(models.UserAccount, user_id)
-    if row and row.role == "Admin":
-        raise HTTPException(status_code=403, detail="Admin users cannot be deleted from this screen.")
     if row:
+        settings = get_settings()
+        is_target_super_admin = row.admin_role in ("MAIN_ADMIN", "SUPER_ADMIN") or row.email.lower() == settings.main_admin_email.lower()
+        if is_target_super_admin:
+            raise HTTPException(status_code=403, detail="Super Admin accounts cannot be deleted.")
+        if current_user.admin_role not in ("MAIN_ADMIN", "SUPER_ADMIN") and row.role in ("Admin", "SUB_ADMIN"):
+            raise HTTPException(status_code=403, detail="Sub Admins cannot delete other Admin users.")
         db.delete(row)
         db.commit()

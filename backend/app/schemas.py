@@ -262,3 +262,45 @@ class PeerBreakdown(BaseModel):
     total: int
     available: int
     passedOut: int
+
+
+class PasswordResetConfirmIn(BaseModel):
+    token: str
+    newPassword: str
+
+    @field_validator("newPassword")
+    @classmethod
+    def valid_password(cls, value: str) -> str:
+        return validate_password(value)
+
+
+class ChangePasswordIn(BaseModel):
+    currentPassword: str
+    newPassword: str
+
+    @field_validator("newPassword")
+    @classmethod
+    def valid_password(cls, value: str) -> str:
+        return validate_password(value)
+
+
+class SubAdminSignupIn(BaseModel):
+    name: str
+    email: str
+    password: str
+
+    @field_validator("name")
+    @classmethod
+    def valid_name(cls, value: str) -> str:
+        return validate_name(value, "Name")
+
+    @field_validator("email")
+    @classmethod
+    def valid_email(cls, value: str) -> str:
+        return validate_email(value)
+
+    @field_validator("password")
+    @classmethod
+    def valid_password(cls, value: str) -> str:
+        return validate_password(value)
+

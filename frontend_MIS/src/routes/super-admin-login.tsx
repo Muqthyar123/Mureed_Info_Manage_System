@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/forms/LoginForm";
 import { useAuth } from "@/context/AuthContext";
 import { DEMO_CREDENTIALS } from "@/services/authService";
 
-export const Route = createFileRoute("/admin-login")({
+export const Route = createFileRoute("/super-admin-login")({
   head: () => ({
     meta: [
       { title: "Super Admin Login — Mureed Information Management System" },
@@ -17,10 +17,10 @@ export const Route = createFileRoute("/admin-login")({
       { property: "og:description", content: "Super Administrator access to the primary management workspace." },
     ],
   }),
-  component: AdminLoginPage,
+  component: SuperAdminLoginPage,
 });
 
-function AdminLoginPage() {
+function SuperAdminLoginPage() {
   const { signInAdmin, signInAdminWithGoogle } = useAuth();
   const navigate = useNavigate();
 
@@ -59,4 +59,3 @@ function AdminLoginPage() {
     />
   );
 }
-

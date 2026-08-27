@@ -19,12 +19,15 @@ class Settings(BaseSettings):
         "", validation_alias=AliasChoices("SUPABASE_SERVICE_ROLE_KEY", "MIMS_SUPABASE_SERVICE_ROLE_KEY")
     )
     frontend_url: str = Field("http://localhost:5173", validation_alias=AliasChoices("FRONTEND_URL", "MIMS_FRONTEND_URL"))
+    brevo_api_key: str = Field("", validation_alias=AliasChoices("BREVO_API_KEY", "MIMS_BREVO_API_KEY"))
+    brevo_sender_mail: str = Field("", validation_alias=AliasChoices("BREVO_SENDER_MAIL", "MIMS_BREVO_SENDER_MAIL"))
 
     model_config = SettingsConfigDict(env_prefix="MIMS_", env_file=".env", extra="ignore")
 
+
     @property
     def is_production(self) -> bool:
-        return self.env.lower() in ("production", "prod")
+        return self.env.strip().lower() in ("production", "prod")
 
     @property
     def cors_origins(self) -> list[str]:
@@ -32,15 +35,15 @@ class Settings(BaseSettings):
 
     @property
     def use_supabase_auth(self) -> bool:
-        return self.auth_backend.lower() == "supabase" or self.is_production
+        return self.auth_backend.strip().lower() == "supabase" or self.is_production
 
     def require_supabase(self) -> None:
         missing = []
-        if not self.supabase_url:
+        if not self.supabase_url.strip():
             missing.append("SUPABASE_URL")
-        if not self.supabase_anon_key:
+        if not self.supabase_anon_key.strip():
             missing.append("SUPABASE_ANON_KEY")
-        if not self.supabase_service_role_key:
+        if not self.supabase_service_role_key.strip():
             missing.append("SUPABASE_SERVICE_ROLE_KEY")
         if missing:
             names = ", ".join(missing)
@@ -48,11 +51,12 @@ class Settings(BaseSettings):
 
     def validate_production(self) -> None:
         if self.is_production:
-            if self.database_url.startswith("sqlite"):
+            if self.database_url.strip().startswith("sqlite"):
                 raise RuntimeError("Production mode cannot use SQLite as the database.")
-            if self.auth_backend.lower() != "supabase":
+            if self.auth_backend.strip().lower() != "supabase":
                 raise RuntimeError("Production mode must use Supabase Auth (AUTH_BACKEND=supabase).")
             self.require_supabase()
+
 
 
 @lru_cache

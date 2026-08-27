@@ -1,5 +1,6 @@
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "");
-export const apiEnabled = Boolean(API_BASE_URL);
+export const API_BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") || "http://127.0.0.1:8000/api";
+export const apiEnabled = true;
 
 const TOKEN_KEY = "mims.auth.token";
 
@@ -15,7 +16,6 @@ function readToken() {
 }
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  if (!API_BASE_URL) throw new Error("API base URL is not configured.");
   const token = readToken();
   const headers = new Headers(init.headers);
   if (!headers.has("Content-Type") && init.body) headers.set("Content-Type", "application/json");

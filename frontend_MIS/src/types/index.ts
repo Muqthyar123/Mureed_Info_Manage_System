@@ -22,13 +22,14 @@ export interface Peer {
   status: "Active" | "Inactive";
 }
 
-export type UserRole = "Admin" | "Mureed";
+export type UserRole = "SUPER_ADMIN" | "SUB_ADMIN" | "MUREED" | "Admin" | "Mureed";
 
-export type AccountStatus = "Active" | "Inactive" | "Pending Setup";
+export type AccountStatus = "Active" | "Inactive" | "Pending Setup" | "PASSWORD_CHANGE_REQUIRED";
 
-export type AdminInternalRole = "MAIN_ADMIN" | "ADMIN";
+export type AdminInternalRole = "SUPER_ADMIN" | "SUB_ADMIN" | "MAIN_ADMIN" | "ADMIN";
 export type AdminAccessStatus = "ACTIVE" | "PENDING" | "REJECTED";
 export type AdminAuthMethod = "password" | "google";
+
 
 export interface MockAdminUser {
   id: string;

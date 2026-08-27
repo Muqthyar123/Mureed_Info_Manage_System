@@ -8,7 +8,9 @@ import {
   type ReactNode,
 } from "react";
 import {
+  getMe,
   loginAdmin,
+  loginSubAdmin,
   loginAdminWithGoogle,
   loginMureed,
   persistUser,
@@ -16,12 +18,14 @@ import {
   startAdminSignup,
   verifyAdminSignupOtp,
 } from "@/services/authService";
+import { apiEnabled } from "@/services/apiClient";
 import type { AuthUser, PendingAdminSignup } from "@/types";
 
 interface AuthContextValue {
   user: AuthUser | null;
   ready: boolean;
   signInAdmin: (email: string, password: string) => Promise<AuthUser>;
+  signInSubAdmin: (email: string, password: string) => Promise<AuthUser>;
   signInAdminWithGoogle: (email: string) => Promise<AuthUser>;
   startAdminSignup: (name: string, email: string, password: string) => Promise<PendingAdminSignup>;
   verifyAdminSignupOtp: (
@@ -41,12 +45,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setUser(readPersistedUser());
-    setReady(true);
+    async function initAuth() {
+      if (apiEnabled) {
+        const currentUser = await getMe();
+        if (currentUser) {
+          persistUser(currentUser);
+          setUser(currentUser);
+        } else {
+          persistUser(null);
+          setUser(null);
+        }
+      } else {
+        setUser(readPersistedUser());
+      }
+      setReady(true);
+    }
+    initAuth();
   }, []);
+
 
   const signInAdmin = useCallback(async (email: string, password: string) => {
     const next = await loginAdmin(email, password);
+    persistUser(next);
+    setUser(next);
+    return next;
+  }, []);
+
+  const signInSubAdmin = useCallback(async (email: string, password: string) => {
+    const next = await loginSubAdmin(email, password);
     persistUser(next);
     setUser(next);
     return next;
@@ -90,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       ready,
       signInAdmin,
+      signInSubAdmin,
       signInAdminWithGoogle,
       startAdminSignup: beginAdminSignup,
       verifyAdminSignupOtp: completeAdminSignupOtp,
@@ -100,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       ready,
       signInAdmin,
+      signInSubAdmin,
       signInAdminWithGoogle,
       beginAdminSignup,
       completeAdminSignupOtp,

@@ -13,10 +13,16 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AdminSignupRouteImport } from './routes/admin-signup'
+import { Route as ChangePasswordRouteImport } from './routes/change-password'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MureedRouteImport } from './routes/mureed'
 import { Route as MureedLoginRouteImport } from './routes/mureed-login'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SetupAccountRouteImport } from './routes/setup-account'
+import { Route as SubAdminLoginRouteImport } from './routes/sub-admin-login'
+import { Route as SubAdminSignupRouteImport } from './routes/sub-admin-signup'
+import { Route as SuperAdminLoginRouteImport } from './routes/super-admin-login'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminPeerRouteImport } from './routes/admin.peer'
@@ -51,6 +57,16 @@ const AdminSignupRoute = AdminSignupRouteImport.update({
   path: '/admin-signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChangePasswordRoute = ChangePasswordRouteImport.update({
+  id: '/change-password',
+  path: '/change-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -66,9 +82,29 @@ const MureedLoginRoute = MureedLoginRouteImport.update({
   path: '/mureed-login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SetupAccountRoute = SetupAccountRouteImport.update({
   id: '/setup-account',
   path: '/setup-account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubAdminLoginRoute = SubAdminLoginRouteImport.update({
+  id: '/sub-admin-login',
+  path: '/sub-admin-login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubAdminSignupRoute = SubAdminSignupRouteImport.update({
+  id: '/sub-admin-signup',
+  path: '/sub-admin-signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuperAdminLoginRoute = SuperAdminLoginRouteImport.update({
+  id: '/super-admin-login',
+  path: '/super-admin-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -142,10 +178,16 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
   '/admin-signup': typeof AdminSignupRoute
+  '/change-password': typeof ChangePasswordRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/mureed': typeof MureedRouteWithChildren
   '/mureed-login': typeof MureedLoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/setup-account': typeof SetupAccountRoute
+  '/sub-admin-login': typeof SubAdminLoginRoute
+  '/sub-admin-signup': typeof SubAdminSignupRoute
+  '/super-admin-login': typeof SuperAdminLoginRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/peer': typeof AdminPeerRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -164,9 +206,15 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin-login': typeof AdminLoginRoute
   '/admin-signup': typeof AdminSignupRoute
+  '/change-password': typeof ChangePasswordRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/mureed-login': typeof MureedLoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/setup-account': typeof SetupAccountRoute
+  '/sub-admin-login': typeof SubAdminLoginRoute
+  '/sub-admin-signup': typeof SubAdminSignupRoute
+  '/super-admin-login': typeof SuperAdminLoginRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/peer': typeof AdminPeerRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -187,10 +235,16 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
   '/admin-signup': typeof AdminSignupRoute
+  '/change-password': typeof ChangePasswordRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/mureed': typeof MureedRouteWithChildren
   '/mureed-login': typeof MureedLoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/setup-account': typeof SetupAccountRoute
+  '/sub-admin-login': typeof SubAdminLoginRoute
+  '/sub-admin-signup': typeof SubAdminSignupRoute
+  '/super-admin-login': typeof SuperAdminLoginRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/peer': typeof AdminPeerRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -212,10 +266,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin-login'
     | '/admin-signup'
+    | '/change-password'
+    | '/forgot-password'
     | '/login'
     | '/mureed'
     | '/mureed-login'
+    | '/reset-password'
     | '/setup-account'
+    | '/sub-admin-login'
+    | '/sub-admin-signup'
+    | '/super-admin-login'
     | '/admin/dashboard'
     | '/admin/peer'
     | '/admin/reports'
@@ -234,9 +294,15 @@ export interface FileRouteTypes {
     | '/'
     | '/admin-login'
     | '/admin-signup'
+    | '/change-password'
+    | '/forgot-password'
     | '/login'
     | '/mureed-login'
+    | '/reset-password'
     | '/setup-account'
+    | '/sub-admin-login'
+    | '/sub-admin-signup'
+    | '/super-admin-login'
     | '/admin/dashboard'
     | '/admin/peer'
     | '/admin/reports'
@@ -256,10 +322,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin-login'
     | '/admin-signup'
+    | '/change-password'
+    | '/forgot-password'
     | '/login'
     | '/mureed'
     | '/mureed-login'
+    | '/reset-password'
     | '/setup-account'
+    | '/sub-admin-login'
+    | '/sub-admin-signup'
+    | '/super-admin-login'
     | '/admin/dashboard'
     | '/admin/peer'
     | '/admin/reports'
@@ -280,10 +352,16 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
   AdminSignupRoute: typeof AdminSignupRoute
+  ChangePasswordRoute: typeof ChangePasswordRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   MureedRoute: typeof MureedRouteWithChildren
   MureedLoginRoute: typeof MureedLoginRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SetupAccountRoute: typeof SetupAccountRoute
+  SubAdminLoginRoute: typeof SubAdminLoginRoute
+  SubAdminSignupRoute: typeof SubAdminSignupRoute
+  SuperAdminLoginRoute: typeof SuperAdminLoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -316,6 +394,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/change-password': {
+      id: '/change-password'
+      path: '/change-password'
+      fullPath: '/change-password'
+      preLoaderRoute: typeof ChangePasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -337,11 +429,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MureedLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/setup-account': {
       id: '/setup-account'
       path: '/setup-account'
       fullPath: '/setup-account'
       preLoaderRoute: typeof SetupAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sub-admin-login': {
+      id: '/sub-admin-login'
+      path: '/sub-admin-login'
+      fullPath: '/sub-admin-login'
+      preLoaderRoute: typeof SubAdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sub-admin-signup': {
+      id: '/sub-admin-signup'
+      path: '/sub-admin-signup'
+      fullPath: '/sub-admin-signup'
+      preLoaderRoute: typeof SubAdminSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/super-admin-login': {
+      id: '/super-admin-login'
+      path: '/super-admin-login'
+      fullPath: '/super-admin-login'
+      preLoaderRoute: typeof SuperAdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -486,10 +606,16 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
   AdminSignupRoute: AdminSignupRoute,
+  ChangePasswordRoute: ChangePasswordRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   MureedRoute: MureedRouteWithChildren,
   MureedLoginRoute: MureedLoginRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SetupAccountRoute: SetupAccountRoute,
+  SubAdminLoginRoute: SubAdminLoginRoute,
+  SubAdminSignupRoute: SubAdminSignupRoute,
+  SuperAdminLoginRoute: SuperAdminLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

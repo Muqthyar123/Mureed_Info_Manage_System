@@ -44,13 +44,39 @@ class SupabaseAuthClient:
         return response.json()
 
     def get_user(self, access_token: str) -> dict[str, Any]:
-        response = httpx.get(
-            f"{self.base_url}/auth/v1/user",
-            headers=self._headers(access_token=access_token),
+        try:
+            response = httpx.get(
+                f"{self.base_url}/auth/v1/user",
+                headers=self._headers(access_token=access_token),
+                timeout=15,
+            )
+            if response.status_code >= 400:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired Supabase token.")
+            return response.json()
+        except httpx.RequestError as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired Supabase token.") from exc
+
+
+    def verify_otp(self, email: str, token: str, type: str = "signup") -> dict[str, Any]:
+        response = httpx.post(
+            f"{self.base_url}/auth/v1/verify",
+            headers=self._headers(),
+            json={"type": type, "email": email, "token": token},
             timeout=15,
         )
         if response.status_code >= 400:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired Supabase token.")
+            raise HTTPException(status_code=400, detail="Invalid or expired OTP. Please try again.")
+        return response.json()
+
+    def resend_otp(self, email: str, type: str = "signup") -> dict[str, Any]:
+        response = httpx.post(
+            f"{self.base_url}/auth/v1/resend",
+            headers=self._headers(),
+            json={"type": type, "email": email},
+            timeout=15,
+        )
+        if response.status_code >= 400:
+            raise HTTPException(status_code=400, detail="Could not resend OTP.")
         return response.json()
 
     def update_user_password(self, user_id: str, password: str) -> None:
@@ -77,3 +103,4 @@ class SupabaseAuthClient:
         if response.status_code >= 400:
             raise HTTPException(status_code=400, detail="Could not send Supabase setup email.")
         return response.json()
+

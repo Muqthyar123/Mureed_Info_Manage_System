@@ -63,7 +63,7 @@ def today() -> str:
 
 
 def seed_database(db: Session) -> None:
-    if db.scalar(select(func.count(models.Mureed.id))) > 0:
+    if db.scalar(select(func.count(models.Peer.id))) > 0 or db.scalar(select(func.count(models.Mureed.id))) > 0:
         return
 
     settings = get_settings()

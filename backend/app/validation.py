@@ -59,8 +59,9 @@ def validate_phone(value: str) -> str:
 def validate_password(value: str) -> str:
     if not value:
         raise ValueError("Password is required.")
-    if not 8 <= len(value) <= 12:
-        raise ValueError("Password must be between 8 and 12 characters.")
+    if not 8 <= len(value) <= 64:
+        raise ValueError("Password must be between 8 and 64 characters.")
+
     if not re.search(r"[A-Z]", value):
         raise ValueError("Password must contain at least one uppercase letter.")
     if not re.search(r"[a-z]", value):

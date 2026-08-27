@@ -43,12 +43,17 @@ export const Route = createFileRoute("/admin/dashboard")({
 function AdminDashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["overview"], queryFn: getOverviewStats });
+  const { data, isLoading } = useQuery({
+    queryKey: ["overview"],
+    queryFn: getOverviewStats,
+    refetchInterval: 3000,
+  });
   const isMainAdmin = user?.adminRole === "MAIN_ADMIN";
   const { data: requests, isLoading: requestsLoading } = useQuery({
     queryKey: ["admin-approval-requests"],
     queryFn: listAdminApprovalRequests,
     enabled: isMainAdmin,
+    refetchInterval: 3000,
   });
 
   const refreshRequests = () =>

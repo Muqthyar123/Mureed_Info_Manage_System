@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpDown, Eye, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
+import { ArrowUpDown, Eye, Mail, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/AppShell";
@@ -283,12 +283,30 @@ function MureedManagement() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title={`Resend Brevo invitation to ${m.email}`}
+                          aria-label={`Resend invitation to ${m.name}`}
+                          onClick={async () => {
+                            try {
+                              const { resendMureedInvitation } = await import("@/services/mureedService");
+                              await resendMureedInvitation(m.id);
+                              toast.success(`Invitation email sent to ${m.email}`);
+                            } catch {
+                              toast.error(`Could not resend invitation to ${m.email}`);
+                            }
+                          }}
+                        >
+                          <Mail className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           aria-label={`Delete ${m.name}`}
                           className="text-destructive hover:text-destructive"
                           onClick={() => setToDelete(m)}
                         >
                           <Trash2 className="size-4" />
                         </Button>
+
                       </div>
                     </td>
                   </tr>
