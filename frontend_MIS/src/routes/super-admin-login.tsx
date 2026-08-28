@@ -30,12 +30,6 @@ function SuperAdminLoginPage() {
       subtitle="Sign in with your primary Super Admin account."
       emailLabel="Super Admin Email"
       emailPlaceholder="aasthanakhadariyaaskariya.admin@gmail.com"
-      hint={
-        <>
-          Super Admin Email: <strong>{DEMO_CREDENTIALS.mainAdminEmail}</strong> | Default Password:{" "}
-          <strong>{DEMO_CREDENTIALS.mainAdminPassword}</strong>
-        </>
-      }
       submitLabel="Super Admin Login"
       onSubmit={async (email, password) => {
         await signInAdmin(email, password);
