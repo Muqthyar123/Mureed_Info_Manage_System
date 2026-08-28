@@ -49,15 +49,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (apiEnabled) {
         const token = readToken();
         if (token) {
-          const currentUser = await getMe();
-          if (currentUser) {
-            persistUser(currentUser);
-            setUser(currentUser);
-          } else {
+          try {
+            const currentUser = await getMe();
+            if (currentUser) {
+              persistUser(currentUser);
+              setUser(currentUser);
+            } else {
+              persistToken(null);
+              persistUser(null);
+              setUser(null);
+            }
+          } catch {
+            persistToken(null);
             persistUser(null);
             setUser(null);
           }
         } else {
+          persistUser(null);
           setUser(null);
         }
       } else {

@@ -173,10 +173,10 @@ def create_mureed(input: schemas.MureedBase, _: models.UserAccount = Depends(req
     if settings.use_supabase_auth:
         client = SupabaseAuthClient(settings)
         try:
-            res = client.sign_up_with_password(input.email, default_pw, data={"name": input.name.strip(), "role": "Mureed", "mureed_id": mureed_id})
-            supabase_user = res.get("user", {})
-            if supabase_user.get("id"):
-                user_id = supabase_user["id"]
+            client.ensure_supabase_user_synced(input.email, default_pw, {"name": input.name.strip(), "role": "Mureed", "mureed_id": mureed_id})
+            sp_user = client.get_user_by_email(input.email)
+            if sp_user and sp_user.get("id"):
+                user_id = sp_user["id"]
         except Exception:
             pass
 

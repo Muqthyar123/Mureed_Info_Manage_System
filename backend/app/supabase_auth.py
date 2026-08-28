@@ -22,74 +22,113 @@ class SupabaseAuthClient:
         return headers
 
     def sign_in_with_password(self, email: str, password: str) -> dict[str, Any]:
-        response = httpx.post(
-            f"{self.base_url}/auth/v1/token?grant_type=password",
-            headers=self._headers(),
-            json={"email": email, "password": password},
-            timeout=15,
-        )
-        if response.status_code >= 400:
-            raise HTTPException(status_code=400, detail="Invalid email or password.")
-        return response.json()
+        with httpx.Client(transport=httpx.HTTPTransport(), timeout=15.0) as client:
+            response = client.post(
+                f"{self.base_url}/auth/v1/token?grant_type=password",
+                headers=self._headers(),
+                json={"email": email, "password": password},
+            )
+            if response.status_code >= 400:
+                raise HTTPException(status_code=400, detail="Invalid email or password.")
+            return response.json()
 
     def sign_up_with_password(self, email: str, password: str, data: dict[str, Any] | None = None) -> dict[str, Any]:
-        response = httpx.post(
-            f"{self.base_url}/auth/v1/signup",
-            headers=self._headers(),
-            json={"email": email, "password": password, "data": data or {}},
-            timeout=15,
-        )
-        if response.status_code >= 400:
-            raise HTTPException(status_code=400, detail="Could not create Supabase Auth user.")
-        return response.json()
+        with httpx.Client(transport=httpx.HTTPTransport(), timeout=15.0) as client:
+            response = client.post(
+                f"{self.base_url}/auth/v1/signup",
+                headers=self._headers(),
+                json={"email": email, "password": password, "data": data or {}},
+            )
+            if response.status_code >= 400:
+                raise HTTPException(status_code=400, detail="Could not create Supabase Auth user.")
+            return response.json()
 
     def get_user(self, access_token: str) -> dict[str, Any]:
         try:
-            response = httpx.get(
-                f"{self.base_url}/auth/v1/user",
-                headers=self._headers(access_token=access_token),
-                timeout=15,
-            )
-            if response.status_code >= 400:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired Supabase token.")
-            return response.json()
-        except httpx.RequestError as exc:
+            with httpx.Client(transport=httpx.HTTPTransport(), timeout=15.0) as client:
+                response = client.get(
+                    f"{self.base_url}/auth/v1/user",
+                    headers=self._headers(access_token=access_token),
+                )
+                if response.status_code >= 400:
+                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired Supabase token.")
+                return response.json()
+        except HTTPException:
+            raise
+        except Exception as exc:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired Supabase token.") from exc
 
-
     def verify_otp(self, email: str, token: str, type: str = "signup") -> dict[str, Any]:
-        response = httpx.post(
-            f"{self.base_url}/auth/v1/verify",
-            headers=self._headers(),
-            json={"type": type, "email": email, "token": token},
-            timeout=15,
-        )
-        if response.status_code >= 400:
-            raise HTTPException(status_code=400, detail="Invalid or expired OTP. Please try again.")
-        return response.json()
+        with httpx.Client(transport=httpx.HTTPTransport(), timeout=15.0) as client:
+            response = client.post(
+                f"{self.base_url}/auth/v1/verify",
+                headers=self._headers(),
+                json={"type": type, "email": email, "token": token},
+            )
+            if response.status_code >= 400:
+                raise HTTPException(status_code=400, detail="Invalid or expired OTP. Please try again.")
+            return response.json()
 
     def resend_otp(self, email: str, type: str = "signup") -> dict[str, Any]:
-        response = httpx.post(
-            f"{self.base_url}/auth/v1/resend",
-            headers=self._headers(),
-            json={"type": type, "email": email},
-            timeout=15,
-        )
-        if response.status_code >= 400:
-            raise HTTPException(status_code=400, detail="Could not resend OTP.")
-        return response.json()
+        with httpx.Client(transport=httpx.HTTPTransport(), timeout=15.0) as client:
+            response = client.post(
+                f"{self.base_url}/auth/v1/resend",
+                headers=self._headers(),
+                json={"type": type, "email": email},
+            )
+            if response.status_code >= 400:
+                raise HTTPException(status_code=400, detail="Could not resend OTP.")
+            return response.json()
+
+    def get_user_by_email(self, email: str) -> dict[str, Any] | None:
+        if not self.settings.supabase_service_role_key:
+            return None
+        try:
+            with httpx.Client(transport=httpx.HTTPTransport(), timeout=15.0) as client:
+                response = client.get(
+                    f"{self.base_url}/auth/v1/admin/users",
+                    headers=self._headers(service_role=True),
+                )
+                if response.status_code == 200:
+                    users = response.json().get("users", [])
+                    for u in users:
+                        if u.get("email", "").lower() == email.strip().lower():
+                            return u
+        except Exception:
+            pass
+        return None
 
     def update_user_password(self, user_id: str, password: str) -> None:
         if not self.settings.supabase_service_role_key:
             raise HTTPException(status_code=500, detail="Supabase service role key is not configured.")
-        response = httpx.put(
-            f"{self.base_url}/auth/v1/admin/users/{user_id}",
-            headers=self._headers(service_role=True),
-            json={"password": password, "email_confirm": True},
-            timeout=15,
-        )
-        if response.status_code >= 400:
-            raise HTTPException(status_code=400, detail="Could not update Supabase Auth password.")
+        with httpx.Client(transport=httpx.HTTPTransport(), timeout=15.0) as client:
+            response = client.put(
+                f"{self.base_url}/auth/v1/admin/users/{user_id}",
+                headers=self._headers(service_role=True),
+                json={"password": password, "email_confirm": True},
+            )
+            if response.status_code >= 400:
+                raise HTTPException(status_code=400, detail="Could not update Supabase Auth password.")
+
+    def ensure_supabase_user_synced(self, email: str, password: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        if not self.settings.supabase_service_role_key:
+            return self.sign_in_with_password(email, password)
+        sp_user = self.get_user_by_email(email)
+        with httpx.Client(transport=httpx.HTTPTransport(), timeout=15.0) as client:
+            if sp_user and sp_user.get("id"):
+                sp_id = sp_user["id"]
+                client.put(
+                    f"{self.base_url}/auth/v1/admin/users/{sp_id}",
+                    headers=self._headers(service_role=True),
+                    json={"password": password, "email_confirm": True},
+                )
+            else:
+                client.post(
+                    f"{self.base_url}/auth/v1/admin/users",
+                    headers=self._headers(service_role=True),
+                    json={"email": email, "password": password, "email_confirm": True, "user_metadata": metadata or {}},
+                )
+        return self.sign_in_with_password(email, password)
 
     def invite_user(self, email: str, data: dict[str, Any] | None = None) -> dict[str, Any]:
         if not self.settings.supabase_service_role_key:

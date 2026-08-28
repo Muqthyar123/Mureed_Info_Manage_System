@@ -6,7 +6,7 @@ import time
 from typing import Any
 
 from fastapi import Depends, Header, HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from .config import get_settings
@@ -73,12 +73,18 @@ def current_user(
             user_id = supabase_user.get("id")
             email = normalize_email(supabase_user.get("email", ""))
             user = db.scalar(
-                select(models.UserAccount).where(or_(models.UserAccount.id == user_id, models.UserAccount.email == email))
+                select(models.UserAccount).where(
+                    or_(
+                        models.UserAccount.id == user_id,
+                        func.lower(models.UserAccount.email) == email.strip().lower()
+                    )
+                )
             )
-        except HTTPException:
+        except HTTPException as exc:
+            print(f"[SECURITY DEBUG] Supabase get_user HTTPException: {exc.status_code} - {exc.detail}")
             raise
-        except Exception:
-            # Fallback to local decode on network errors
+        except Exception as exc:
+            print(f"[SECURITY DEBUG] Supabase get_user Exception: {exc}")
             payload = decode_token(token)
             user = db.get(models.UserAccount, payload.get("sub"))
     else:

@@ -163,10 +163,15 @@ export function readPersistedUser(): AuthUser | null {
 export async function getMe(): Promise<AuthUser | null> {
   try {
     const user = await apiRequest<AuthUser>("/auth/me");
-    if (user) persistUser(user);
-    return user;
+    if (user) {
+      persistUser(user);
+      return user;
+    }
+    persistUser(null);
+    return null;
   } catch {
-    return readPersistedUser();
+    persistUser(null);
+    return null;
   }
 }
 
@@ -174,7 +179,7 @@ export const DEMO_CREDENTIALS = {
   adminEmail: "admin@mims.app",
   adminPassword: "Admin@123",
   mainAdminEmail: MAIN_ADMIN_EMAIL,
-  mainAdminPassword: "Admin@123",
+  mainAdminPassword: "@Saifulla_123",
   mockOtp: "123456",
   mureedPassword: "@Mureed_123",
 };

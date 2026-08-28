@@ -45,19 +45,18 @@ def login_admin(input: schemas.EmailPasswordIn, db: Session = Depends(get_db)):
     if settings.use_supabase_auth:
         client = SupabaseAuthClient(settings)
         access_token = None
-        try:
-            res = client.sign_in_with_password(email, input.password)
-            access_token = res.get("access_token")
-        except Exception:
-            # Fallback to local DB password check if Supabase Auth credentials are not synced yet
-            if user and user.password_hash and verify_password(input.password, user.password_hash):
-                try:
-                    # Sync password into Supabase Auth
-                    client.update_user_password(user.id, input.password)
-                    res = client.sign_in_with_password(email, input.password)
-                    access_token = res.get("access_token")
-                except Exception:
-                    pass
+        if user and user.password_hash and verify_password(input.password, user.password_hash):
+            try:
+                res = client.ensure_supabase_user_synced(email, input.password, {"role": user.role, "admin_role": user.admin_role})
+                access_token = res.get("access_token")
+            except Exception:
+                pass
+        if not access_token:
+            try:
+                res = client.sign_in_with_password(email, input.password)
+                access_token = res.get("access_token")
+            except Exception:
+                pass
 
         if not user:
             raise HTTPException(status_code=400, detail="Invalid admin email or password.")
@@ -68,8 +67,10 @@ def login_admin(input: schemas.EmailPasswordIn, db: Session = Depends(get_db)):
         if user.account_status != "Active" or user.admin_access_status != "ACTIVE":
             raise HTTPException(status_code=403, detail="Active Admin access required.")
 
-        token_to_use = access_token or create_token({"sub": user.id, "role": user.role})
-        return schemas.AuthResponse(user=auth_user(user), accessToken=token_to_use)
+        if not access_token:
+            raise HTTPException(status_code=400, detail="Supabase authentication failed. Please check credentials.")
+
+        return schemas.AuthResponse(user=auth_user(user), accessToken=access_token)
 
     if not user or "password" not in user.auth_methods.split(",") or not verify_password(input.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid admin email or password.")
@@ -98,25 +99,28 @@ def login_mureed(input: schemas.EmailPasswordIn, db: Session = Depends(get_db)):
     if settings.use_supabase_auth:
         client = SupabaseAuthClient(settings)
         access_token = None
-        try:
-            res = client.sign_in_with_password(email, input.password)
-            access_token = res.get("access_token")
-        except Exception:
-            if user and user.password_hash and verify_password(input.password, user.password_hash):
-                try:
-                    client.update_user_password(user.id, input.password)
-                    res = client.sign_in_with_password(email, input.password)
-                    access_token = res.get("access_token")
-                except Exception:
-                    pass
+        if user and user.password_hash and verify_password(input.password, user.password_hash):
+            try:
+                res = client.ensure_supabase_user_synced(email, input.password, {"role": "Mureed", "mureed_id": user.mureed_id})
+                access_token = res.get("access_token")
+            except Exception:
+                pass
+        if not access_token:
+            try:
+                res = client.sign_in_with_password(email, input.password)
+                access_token = res.get("access_token")
+            except Exception:
+                pass
 
         if not user:
             raise HTTPException(status_code=400, detail="Invalid registered email or password.")
         if user.account_status in ("Disabled", "Inactive"):
             raise HTTPException(status_code=403, detail="This Mureed account is not active.")
 
-        token_to_use = access_token or create_token({"sub": user.id, "role": user.role})
-        return schemas.AuthResponse(user=auth_user(user), accessToken=token_to_use)
+        if not access_token:
+            raise HTTPException(status_code=400, detail="Supabase authentication failed. Please check credentials.")
+
+        return schemas.AuthResponse(user=auth_user(user), accessToken=access_token)
 
     if not user or not verify_password(input.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid registered email or password.")
@@ -439,17 +443,18 @@ def login_sub_admin(input: schemas.EmailPasswordIn, db: Session = Depends(get_db
     if settings.use_supabase_auth:
         client = SupabaseAuthClient(settings)
         access_token = None
-        try:
-            res = client.sign_in_with_password(email, input.password)
-            access_token = res.get("access_token")
-        except Exception:
-            if user and user.password_hash and verify_password(input.password, user.password_hash):
-                try:
-                    client.update_user_password(user.id, input.password)
-                    res = client.sign_in_with_password(email, input.password)
-                    access_token = res.get("access_token")
-                except Exception:
-                    pass
+        if user and user.password_hash and verify_password(input.password, user.password_hash):
+            try:
+                res = client.ensure_supabase_user_synced(email, input.password, {"role": "SUB_ADMIN"})
+                access_token = res.get("access_token")
+            except Exception:
+                pass
+        if not access_token:
+            try:
+                res = client.sign_in_with_password(email, input.password)
+                access_token = res.get("access_token")
+            except Exception:
+                pass
 
         if not user:
             raise HTTPException(status_code=400, detail="Invalid Sub Admin email or password.")
@@ -460,8 +465,10 @@ def login_sub_admin(input: schemas.EmailPasswordIn, db: Session = Depends(get_db
         if user.account_status != "Active" or user.admin_access_status != "ACTIVE":
             raise HTTPException(status_code=403, detail="Your account has been disabled.")
 
-        token_to_use = access_token or create_token({"sub": user.id, "role": user.role})
-        return schemas.AuthResponse(user=auth_user(user), accessToken=token_to_use)
+        if not access_token:
+            raise HTTPException(status_code=400, detail="Supabase authentication failed. Please check credentials.")
+
+        return schemas.AuthResponse(user=auth_user(user), accessToken=access_token)
 
     if not user or not verify_password(input.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid Sub Admin email or password.")
