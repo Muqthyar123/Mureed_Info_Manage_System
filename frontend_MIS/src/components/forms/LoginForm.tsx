@@ -92,8 +92,11 @@ export function LoginForm({
         </Link>
 
         <div className="surface-card mt-4 p-6 sm:p-8">
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>
+          <div className="flex justify-center mb-4">
+            <img src="/logo.png" alt="MIMS Emblem Logo" className="h-16 w-16 object-contain rounded-md bg-white p-1 shadow-sm border border-border" />
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-center sm:text-left">{title}</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground text-center sm:text-left">{subtitle}</p>
 
           <form className="mt-6 space-y-4" onSubmit={submit} noValidate>
             <div>

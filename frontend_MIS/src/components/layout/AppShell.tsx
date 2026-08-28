@@ -58,9 +58,12 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
 
   const sidebarInner = (
     <div className="flex h-full flex-col bg-sidebar py-5">
-      <div className="px-5 pb-6">
-        <p className="font-display text-base font-semibold text-sidebar-accent-foreground">MIMS</p>
-        <p className="mt-0.5 text-xs text-sidebar-foreground/60">{scopeLabel}</p>
+      <div className="flex items-center gap-3 px-5 pb-6">
+        <img src="/logo.png" alt="MIMS Logo" className="h-10 w-10 shrink-0 rounded-md bg-white p-0.5 shadow-sm object-contain" />
+        <div>
+          <p className="font-display text-base font-semibold text-sidebar-accent-foreground">MIMS</p>
+          <p className="mt-0.5 text-xs text-sidebar-foreground/60">{scopeLabel}</p>
+        </div>
       </div>
       {nav}
       <div className="mt-4 border-t border-sidebar-border px-3 pt-4">
@@ -110,6 +113,7 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
           <Button variant="ghost" size="icon" aria-label="Open menu" onClick={() => setOpen(true)}>
             <Menu className="size-5" />
           </Button>
+          <img src="/logo.png" alt="MIMS Logo" className="h-7 w-7 shrink-0 rounded-md object-contain" />
           <span className="font-display text-sm font-semibold">MIMS</span>
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">{children}</main>

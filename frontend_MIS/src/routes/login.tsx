@@ -17,6 +17,9 @@ function LoginChooser() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md text-center">
+        <div className="flex justify-center mb-4">
+          <img src="/logo.png" alt="MIMS Emblem Logo" className="h-20 w-20 object-contain rounded-md bg-white p-1.5 shadow-sm border border-border" />
+        </div>
         <h1 className="text-2xl font-bold tracking-tight">MIMS Access Portal</h1>
         <p className="mt-1 text-sm text-muted-foreground">Select your login portal to proceed</p>
         <div className="mt-6 grid gap-3">
