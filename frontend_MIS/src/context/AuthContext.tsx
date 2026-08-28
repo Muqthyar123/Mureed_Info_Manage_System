@@ -18,7 +18,7 @@ import {
   startAdminSignup,
   verifyAdminSignupOtp,
 } from "@/services/authService";
-import { apiEnabled, readToken } from "@/services/apiClient";
+import { apiEnabled, persistToken, readToken } from "@/services/apiClient";
 import type { AuthUser, PendingAdminSignup } from "@/types";
 
 interface AuthContextValue {
@@ -120,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(() => {
+    persistToken(null);
     persistUser(null);
     setUser(null);
   }, []);
