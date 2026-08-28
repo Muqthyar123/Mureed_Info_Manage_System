@@ -34,11 +34,19 @@ def list_peer_names(_: models.UserAccount = Depends(require_admin), db: Session 
 
 @router.post("", response_model=schemas.PeerOut)
 def create_peer(input: schemas.PeerIn, _: models.UserAccount = Depends(require_admin), db: Session = Depends(get_db)):
-    existing = db.scalar(select(models.Peer).where(func.lower(models.Peer.name) == input.name.lower()))
+    existing = db.scalar(select(models.Peer).where(func.lower(models.Peer.name) == input.name.strip().lower()))
     if existing:
         raise conflict("Peer with this name already exists.")
-    next_number = (db.scalar(select(func.count(models.Peer.id))) or 0) + 1
-    row = models.Peer(id=f"mr-{next_number}", name=input.name.strip(), status=input.status)
+    max_num = 0
+    for pid in db.scalars(select(models.Peer.id)).all():
+        if pid and pid.startswith("mr-"):
+            try:
+                num = int(pid.split("-")[1])
+                if num > max_num:
+                    max_num = num
+            except ValueError:
+                pass
+    row = models.Peer(id=f"mr-{max_num + 1}", name=input.name.strip(), status=input.status)
     db.add(row)
     try:
         db.commit()

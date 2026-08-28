@@ -149,8 +149,16 @@ def create_mureed(input: schemas.MureedBase, _: models.UserAccount = Depends(req
     existing = db.scalar(select(models.Mureed).where(models.Mureed.email == input.email))
     if existing:
         raise conflict("Mureed with this email already exists.")
-    next_number = (db.scalar(select(func.count(models.Mureed.id))) or 0) + 1
-    mureed_id = f"MRD-{next_number:05d}"
+    max_num = 0
+    for mid in db.scalars(select(models.Mureed.id)).all():
+        if mid and mid.startswith("MRD-"):
+            try:
+                num = int(mid.split("-")[1])
+                if num > max_num:
+                    max_num = num
+            except ValueError:
+                pass
+    mureed_id = f"MRD-{(max_num + 1):05d}"
     row = models.Mureed(
         id=mureed_id,
         name=input.name.strip(),
@@ -254,8 +262,24 @@ def update_mureed(mureed_id: str, input: schemas.MureedBase, _: models.UserAccou
 def delete_mureed(mureed_id: str, _: models.UserAccount = Depends(require_admin), db: Session = Depends(get_db)):
     row = db.get(models.Mureed, mureed_id)
     if row:
-        user = db.scalar(select(models.UserAccount).where(models.UserAccount.mureed_id == row.id))
-        if user:
+        settings = get_settings()
+        users = db.scalars(
+            select(models.UserAccount).where(
+                or_(
+                    models.UserAccount.mureed_id == row.id,
+                    func.lower(models.UserAccount.email) == row.email.strip().lower()
+                )
+            )
+        ).all()
+        for user in users:
+            if settings.use_supabase_auth:
+                try:
+                    client = SupabaseAuthClient(settings)
+                    sp_user = client.get_user_by_email(user.email)
+                    if sp_user and sp_user.get("id"):
+                        client.delete_user(sp_user["id"])
+                except Exception:
+                    pass
             db.delete(user)
         db.delete(row)
         db.commit()

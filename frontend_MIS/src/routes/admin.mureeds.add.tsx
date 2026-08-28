@@ -49,13 +49,12 @@ function AddMureedPage() {
     setSubmitting(true);
     try {
       const mureed = await createMureed(value);
-      await createMureedAccount(mureed.name, mureed.email, mureed.id);
       queryClient.invalidateQueries({ queryKey: ["mureeds"] });
       queryClient.invalidateQueries({ queryKey: ["overview"] });
       queryClient.invalidateQueries({ queryKey: ["users"] });
       setCreated({ email: mureed.email });
-    } catch {
-      toast.error("Could not create Mureed.");
+    } catch (err: any) {
+      toast.error(err.message || "Could not create Mureed.");
     } finally {
       setSubmitting(false);
     }

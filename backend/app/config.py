@@ -8,7 +8,10 @@ class Settings(BaseSettings):
     env: str = Field("development", validation_alias=AliasChoices("MIMS_ENV", "APP_ENV", "ENVIRONMENT"))
     database_url: str = Field("sqlite:///./mims.db", validation_alias=AliasChoices("MIMS_DATABASE_URL", "DATABASE_URL"))
     secret_key: str = "change-this-for-local-development"
-    main_admin_email: str = "mainadmin@example.com"
+    main_admin_email: str = Field(
+        "aasthanakhadariyaaskariya.admin@gmail.com",
+        validation_alias=AliasChoices("MAIN_ADMIN_EMAIL", "MIMS_MAIN_ADMIN_EMAIL"),
+    )
     demo_otp: str = "123456"
     otp_ttl_seconds: int = 600
     frontend_origins: str = "http://localhost:5173,http://127.0.0.1:5173"

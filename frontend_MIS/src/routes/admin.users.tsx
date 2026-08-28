@@ -38,6 +38,7 @@ import {
   setAccountStatus,
 } from "@/services/userService";
 import { MAIN_ADMIN_EMAIL } from "@/services/authService";
+import { useAuth } from "@/context/AuthContext";
 import type { AppUser } from "@/types";
 import { formatDate } from "@/utils/age";
 
@@ -67,6 +68,9 @@ function UserManagement() {
   });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["users"] });
+
+  const { user } = useAuth();
+  const isSubAdmin = user?.adminRole === "SUB_ADMIN";
 
   return (
     <>
@@ -132,69 +136,84 @@ function UserManagement() {
                   </tr>
                 ))
               ) : data && data.length > 0 ? (
-                data.map((u) => (
-                  <tr key={u.id} className="border-b border-border/70 hover:bg-muted/50">
-                    <td className="px-3 py-3 font-medium">{u.name}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{u.email}</td>
-                    <td className="px-3 py-3">
-                      <StatusBadge value={u.role} />
-                    </td>
-                    <td className="px-3 py-3">
-                      <StatusBadge value={u.accountStatus} />
-                    </td>
-                    <td className="px-3 py-3">{formatDate(u.createdDate)}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex justify-end">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" aria-label={`Actions for ${u.name}`}>
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              disabled={u.accountStatus === "Active" || u.email.toLowerCase() === MAIN_ADMIN_EMAIL.toLowerCase()}
-                              onClick={async () => {
-                                await setAccountStatus(u.id, "Active");
-                                toast.success("Account activated", { description: u.email });
-                                refresh();
-                              }}
-                            >
-                              Activate account
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={u.accountStatus === "Inactive" || u.email.toLowerCase() === MAIN_ADMIN_EMAIL.toLowerCase()}
-                              onClick={async () => {
-                                await setAccountStatus(u.id, "Inactive");
-                                toast.success("Account deactivated", { description: u.email });
-                                refresh();
-                              }}
-                            >
-                              Deactivate account
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={u.role !== "Mureed"}
-                              onClick={async () => {
-                                await resendSetupEmail(u.id);
-                                toast.success("Account setup email sent", { description: u.email });
-                              }}
-                            >
-                              <Mail className="size-4" />
-                              Resend setup email
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={u.role === "Admin"}
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => setToDelete(u)}
-                            >
-                              Delete account
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                data.map((u) => {
+                  const canManage = !isSubAdmin || u.role === "Mureed";
+                  return (
+                    <tr key={u.id} className="border-b border-border/70 hover:bg-muted/50">
+                      <td className="px-3 py-3 font-medium">{u.name}</td>
+                      <td className="px-3 py-3 text-muted-foreground font-mono text-xs sm:text-sm">{u.email}</td>
+                      <td className="px-3 py-3">
+                        <StatusBadge value={u.role} />
+                      </td>
+                      <td className="px-3 py-3">
+                        <StatusBadge value={u.accountStatus} />
+                      </td>
+                      <td className="px-3 py-3">{formatDate(u.createdDate)}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" aria-label={`Actions for ${u.name}`}>
+                                <MoreHorizontal className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                disabled={!canManage || u.accountStatus === "Active" || u.email.toLowerCase() === MAIN_ADMIN_EMAIL.toLowerCase()}
+                                onClick={async () => {
+                                  try {
+                                    await setAccountStatus(u.id, "Active");
+                                    toast.success("Account activated", { description: u.email });
+                                    refresh();
+                                  } catch (err: any) {
+                                    toast.error(err.message || "Failed to activate account");
+                                  }
+                                }}
+                              >
+                                Activate account
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={!canManage || u.accountStatus === "Inactive" || u.email.toLowerCase() === MAIN_ADMIN_EMAIL.toLowerCase()}
+                                onClick={async () => {
+                                  try {
+                                    await setAccountStatus(u.id, "Inactive");
+                                    toast.success("Account deactivated", { description: u.email });
+                                    refresh();
+                                  } catch (err: any) {
+                                    toast.error(err.message || "Failed to deactivate account");
+                                  }
+                                }}
+                              >
+                                Deactivate account
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={!canManage || u.role !== "Mureed"}
+                                onClick={async () => {
+                                  try {
+                                    await resendSetupEmail(u.id);
+                                    toast.success("Account setup email sent", { description: u.email });
+                                  } catch (err: any) {
+                                    toast.error(err.message || "Failed to resend setup email");
+                                  }
+                                }}
+                              >
+                                <Mail className="size-4" />
+                                Resend setup email
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={!canManage}
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => setToDelete(u)}
+                              >
+                                Delete account
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={6} className="px-3 py-16 text-center">
@@ -226,10 +245,16 @@ function UserManagement() {
               onClick={async (e) => {
                 e.preventDefault();
                 if (toDelete) {
-                  await deleteUser(toDelete.id);
-                  toast.success("Account deleted", { description: toDelete.email });
-                  setToDelete(null);
-                  refresh();
+                  try {
+                    await deleteUser(toDelete.id);
+                    toast.success("Account deleted", { description: toDelete.email });
+                    setToDelete(null);
+                    refresh();
+                    queryClient.invalidateQueries({ queryKey: ["mureeds"] });
+                    queryClient.invalidateQueries({ queryKey: ["overview"] });
+                  } catch (err: any) {
+                    toast.error(err.message || "Failed to delete account");
+                  }
                 }
               }}
             >

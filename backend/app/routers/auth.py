@@ -3,7 +3,7 @@ import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -37,7 +37,7 @@ def login_admin(input: schemas.EmailPasswordIn, db: Session = Depends(get_db)):
 
     user = db.scalar(
         select(models.UserAccount).where(
-            models.UserAccount.email == email,
+            func.lower(models.UserAccount.email) == email.lower(),
             or_(models.UserAccount.role == "Admin", models.UserAccount.role == "SUPER_ADMIN", models.UserAccount.role == "SUB_ADMIN"),
         )
     )
@@ -45,12 +45,14 @@ def login_admin(input: schemas.EmailPasswordIn, db: Session = Depends(get_db)):
     if settings.use_supabase_auth:
         client = SupabaseAuthClient(settings)
         access_token = None
-        if user and user.password_hash and verify_password(input.password, user.password_hash):
+        if user:
             try:
                 res = client.ensure_supabase_user_synced(email, input.password, {"role": user.role, "admin_role": user.admin_role})
                 access_token = res.get("access_token")
             except Exception:
                 pass
+            if not access_token and user.password_hash and verify_password(input.password, user.password_hash):
+                access_token = create_token({"sub": user.id, "role": user.role})
         if not access_token:
             try:
                 res = client.sign_in_with_password(email, input.password)
@@ -68,7 +70,10 @@ def login_admin(input: schemas.EmailPasswordIn, db: Session = Depends(get_db)):
             raise HTTPException(status_code=403, detail="Active Admin access required.")
 
         if not access_token:
-            raise HTTPException(status_code=400, detail="Supabase authentication failed. Please check credentials.")
+            if user.password_hash and verify_password(input.password, user.password_hash):
+                access_token = create_token({"sub": user.id, "role": user.role})
+            else:
+                raise HTTPException(status_code=400, detail="Invalid admin email or password.")
 
         return schemas.AuthResponse(user=auth_user(user), accessToken=access_token)
 
@@ -99,7 +104,7 @@ def login_mureed(input: schemas.EmailPasswordIn, db: Session = Depends(get_db)):
     if settings.use_supabase_auth:
         client = SupabaseAuthClient(settings)
         access_token = None
-        if user and user.password_hash and verify_password(input.password, user.password_hash):
+        if user:
             try:
                 res = client.ensure_supabase_user_synced(email, input.password, {"role": "Mureed", "mureed_id": user.mureed_id})
                 access_token = res.get("access_token")

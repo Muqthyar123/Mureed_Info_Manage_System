@@ -143,3 +143,15 @@ class SupabaseAuthClient:
             raise HTTPException(status_code=400, detail="Could not send Supabase setup email.")
         return response.json()
 
+    def delete_user(self, user_id: str) -> None:
+        if not self.settings.supabase_service_role_key:
+            return
+        try:
+            with httpx.Client(transport=httpx.HTTPTransport(), timeout=15.0) as client:
+                client.delete(
+                    f"{self.base_url}/auth/v1/admin/users/{user_id}",
+                    headers=self._headers(service_role=True),
+                )
+        except Exception:
+            pass
+

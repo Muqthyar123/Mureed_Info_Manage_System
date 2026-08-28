@@ -3,6 +3,9 @@ import sys
 import uuid
 from fastapi.testclient import TestClient
 
+from dotenv import load_dotenv
+load_dotenv(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env")))
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.main import app
@@ -26,6 +29,7 @@ def test_system():
     print("\n--- [1/5] SUPER ADMIN LOGIN & API TEST ---")
     super_email = settings.main_admin_email
     super_pass = "@Saifulla_123"
+    print(f"Attempting login for: '{super_email}'")
 
     res_login = client.post("/api/auth/admin/login", json={"email": super_email, "password": super_pass})
     print(f"POST /api/auth/admin/login Status: {res_login.status_code}")

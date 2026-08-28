@@ -120,25 +120,34 @@ function MureedManagement() {
   };
 
   const handleExport = async (format: ExportFormat) => {
-    const rows = await listMureedsForExport(query);
-    await exportRows({
-      format,
-      rows,
-      filename: `mureeds-${new Date().toISOString().slice(0, 10)}`,
-      title: "Mureed Records",
-      columns: [
-        { header: "Mureed Name", value: (m) => m.name },
-        { header: "Date of Birth", value: (m) => m.dateOfBirth },
-        { header: "Age", value: (m) => String(calculateAge(m.dateOfBirth) ?? "") },
-        { header: "Gender", value: (m) => m.gender },
-        { header: "Address", value: (m) => m.address },
-        { header: "Location", value: (m) => locationFromAddress(m.address) },
-        { header: "Phone Number", value: (m) => formatPhone(m.phone) },
-        { header: "Email", value: (m) => m.email },
-        { header: "Peer Name", value: (m) => m.peerName },
-        { header: "Mureed Status", value: (m) => m.status },
-      ],
-    });
+    try {
+      const rows = await listMureedsForExport(query);
+      if (!rows || rows.length === 0) {
+        toast.info("No Mureed records match the current filter to export.");
+        return;
+      }
+      await exportRows({
+        format,
+        rows,
+        filename: `mureeds-${new Date().toISOString().slice(0, 10)}`,
+        title: "Mureed Records",
+        columns: [
+          { header: "Mureed Name", value: (m) => m.name },
+          { header: "Date of Birth", value: (m) => m.dateOfBirth },
+          { header: "Age", value: (m) => String(calculateAge(m.dateOfBirth) ?? "") },
+          { header: "Gender", value: (m) => m.gender },
+          { header: "Address", value: (m) => m.address },
+          { header: "Location", value: (m) => locationFromAddress(m.address) },
+          { header: "Phone Number", value: (m) => formatPhone(m.phone) },
+          { header: "Email", value: (m) => m.email },
+          { header: "Peer Name", value: (m) => m.peerName },
+          { header: "Mureed Status", value: (m) => m.status },
+        ],
+      });
+      toast.success(`Exported ${rows.length} Mureed records (${format.toUpperCase()})`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to export Mureed records.");
+    }
   };
 
   const confirmDelete = async () => {

@@ -108,16 +108,20 @@ function PeerManagement() {
       toast.error("Peer Name is required.");
       return;
     }
-    if (editing) {
-      await updatePeer(editing.id, name.trim(), formStatus);
-      toast.success("Peer updated");
-    } else {
-      await createPeer(name.trim(), formStatus);
-      toast.success("Peer added");
+    try {
+      if (editing) {
+        await updatePeer(editing.id, name.trim(), formStatus);
+        toast.success("Peer updated");
+      } else {
+        await createPeer(name.trim(), formStatus);
+        toast.success("Peer added");
+      }
+      setEditing(null);
+      setCreating(false);
+      refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save Peer.");
     }
-    setEditing(null);
-    setCreating(false);
-    refresh();
   };
 
   return (
@@ -298,10 +302,14 @@ function PeerManagement() {
               onClick={async (e) => {
                 e.preventDefault();
                 if (toDelete) {
-                  await deletePeer(toDelete.id);
-                  toast.success("Peer deleted", { description: toDelete.name });
-                  setToDelete(null);
-                  refresh();
+                  try {
+                    await deletePeer(toDelete.id);
+                    toast.success("Peer deleted", { description: toDelete.name });
+                    setToDelete(null);
+                    refresh();
+                  } catch (err: any) {
+                    toast.error(err.message || "Failed to delete Peer.");
+                  }
                 }
               }}
             >
