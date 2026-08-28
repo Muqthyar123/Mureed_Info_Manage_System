@@ -105,9 +105,9 @@ MIMS_AUTH_BACKEND=supabase
 SUPABASE_URL=https://<your-project>.supabase.co
 SUPABASE_ANON_KEY=<your-anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
-MAIN_ADMIN_EMAIL=aasthanakhadariyaaskariya.admin@gmail.com
+MAIN_ADMIN_EMAIL=a********.admin@gmail.com
 BREVO_API_KEY=<your-brevo-api-key>
-BREVO_SENDER_MAIL=aasthanakhadariyaaskariya.admin@gmail.com
+BREVO_SENDER_MAIL=a********.admin@gmail.com
 MIMS_FRONTEND_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8081
 ```
 
