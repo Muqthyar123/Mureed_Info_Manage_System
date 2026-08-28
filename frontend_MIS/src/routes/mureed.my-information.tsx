@@ -27,6 +27,7 @@ function MyInformation() {
     queryKey: ["mureed", user?.mureedId],
     queryFn: () => getMureed(user!.mureedId!),
     enabled: !!user?.mureedId,
+    refetchInterval: 3000,
   });
 
   return (

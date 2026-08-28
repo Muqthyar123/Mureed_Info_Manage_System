@@ -63,6 +63,7 @@ function UserManagement() {
   const { data, isLoading } = useQuery({
     queryKey: ["users", search, role, status],
     queryFn: () => listUsers(search, role, status),
+    refetchInterval: 3000,
   });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["users"] });

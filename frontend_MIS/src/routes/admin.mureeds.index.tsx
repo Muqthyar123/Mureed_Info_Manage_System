@@ -77,9 +77,14 @@ function MureedManagement() {
   const { data: peerNames = [] } = useQuery({
     queryKey: ["peer-names"],
     queryFn: listPeerNames,
+    refetchInterval: 3000,
   });
 
-  const { data: locations = [] } = useQuery({ queryKey: ["locations"], queryFn: listLocations });
+  const { data: locations = [] } = useQuery({
+    queryKey: ["locations"],
+    queryFn: listLocations,
+    refetchInterval: 3000,
+  });
 
   const query = {
     page,
@@ -97,6 +102,7 @@ function MureedManagement() {
     queryKey: ["mureeds", query],
     queryFn: () => listMureeds(query),
     placeholderData: keepPreviousData,
+    refetchInterval: 3000,
   });
 
   const total = data?.total ?? 0;

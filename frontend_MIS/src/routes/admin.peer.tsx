@@ -68,6 +68,7 @@ function PeerManagement() {
   const { data, isLoading } = useQuery({
     queryKey: ["peer", search, status],
     queryFn: () => listPeer(search, status),
+    refetchInterval: 3000,
   });
 
   const refresh = () => {

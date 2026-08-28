@@ -10,7 +10,7 @@ export function persistToken(token: string | null) {
   else window.localStorage.removeItem(TOKEN_KEY);
 }
 
-function readToken() {
+export function readToken() {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(TOKEN_KEY);
 }

@@ -18,7 +18,7 @@ import {
   startAdminSignup,
   verifyAdminSignupOtp,
 } from "@/services/authService";
-import { apiEnabled } from "@/services/apiClient";
+import { apiEnabled, readToken } from "@/services/apiClient";
 import type { AuthUser, PendingAdminSignup } from "@/types";
 
 interface AuthContextValue {
@@ -47,12 +47,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function initAuth() {
       if (apiEnabled) {
-        const currentUser = await getMe();
-        if (currentUser) {
-          persistUser(currentUser);
-          setUser(currentUser);
+        const token = readToken();
+        if (token) {
+          const currentUser = await getMe();
+          if (currentUser) {
+            persistUser(currentUser);
+            setUser(currentUser);
+          } else {
+            persistUser(null);
+            setUser(null);
+          }
         } else {
-          persistUser(null);
           setUser(null);
         }
       } else {

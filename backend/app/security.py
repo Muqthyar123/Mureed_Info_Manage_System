@@ -66,16 +66,25 @@ def current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
     token = authorization.removeprefix("Bearer ").strip()
     settings = get_settings()
+
     if settings.use_supabase_auth:
-        supabase_user = SupabaseAuthClient(settings).get_user(token)
-        user_id = supabase_user.get("id")
-        email = normalize_email(supabase_user.get("email", ""))
-        user = db.scalar(
-            select(models.UserAccount).where(or_(models.UserAccount.id == user_id, models.UserAccount.email == email))
-        )
+        try:
+            supabase_user = SupabaseAuthClient(settings).get_user(token)
+            user_id = supabase_user.get("id")
+            email = normalize_email(supabase_user.get("email", ""))
+            user = db.scalar(
+                select(models.UserAccount).where(or_(models.UserAccount.id == user_id, models.UserAccount.email == email))
+            )
+        except HTTPException:
+            raise
+        except Exception:
+            # Fallback to local decode on network errors
+            payload = decode_token(token)
+            user = db.get(models.UserAccount, payload.get("sub"))
     else:
         payload = decode_token(token)
         user = db.get(models.UserAccount, payload.get("sub"))
+
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User account was not found.")
     return user
