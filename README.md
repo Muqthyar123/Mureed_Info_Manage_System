@@ -53,7 +53,7 @@ The **Mureed Information Management System (MIMS)** is a multi-role web platform
 Mureed_Info_Manage_System(MIS)/
 ├── README.md                           # Master project documentation (this file)
 │
-├── backend/                            # FastAPI Python Backend Application
+├── backend_MIS/                            # FastAPI Python Backend Application
 │   ├── app/
 │   │   ├── main.py                     # FastAPI application factory & CORS setup
 │   │   ├── config.py                   # Pydantic Settings & environment variables
@@ -96,7 +96,7 @@ Mureed_Info_Manage_System(MIS)/
 
 ## ⚙️ Environment Configuration
 
-### Backend Environment (`backend/.env`)
+### Backend Environment (`backend_MIS/.env`)
 
 ```env
 MIMS_ENV=development
@@ -132,7 +132,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8000/api
 
 ```bash
 # Navigate to backend directory
-cd backend
+cd backend_MIS
 
 # Create and activate virtual environment (optional but recommended)
 python -m venv venv
@@ -172,7 +172,7 @@ The frontend application will launch at: `http://localhost:5173`
 
 ### Running Full-Stack Acceptance Tests
 
-An automated real-world test suite is included in `backend/scripts/run_real_world_acceptance_test.py`. It tests:
+An automated real-world test suite is included in `backend_MIS/scripts/run_real_world_acceptance_test.py`. It tests:
 1. Super Admin authentication & token generation.
 2. Mureed account creation & age calculation.
 3. Mureed login & route isolation.
@@ -180,7 +180,7 @@ An automated real-world test suite is included in `backend/scripts/run_real_worl
 5. Automatic cleanup of test data.
 
 ```bash
-python backend/scripts/run_real_world_acceptance_test.py
+python backend_MIS/scripts/run_real_world_acceptance_test.py
 ```
 
 ### Production Build Verification
