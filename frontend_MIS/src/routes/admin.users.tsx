@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -37,7 +36,6 @@ import {
   resendSetupEmail,
   setAccountStatus,
 } from "@/services/userService";
-import { MAIN_ADMIN_EMAIL } from "@/services/authService";
 import { useAuth } from "@/context/AuthContext";
 import type { AppUser } from "@/types";
 import { formatDate } from "@/utils/age";
@@ -60,11 +58,11 @@ function UserManagement() {
   const [role, setRole] = useState("all");
   const [status, setStatus] = useState("all");
   const [toDelete, setToDelete] = useState<AppUser | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["users", search, role, status],
     queryFn: () => listUsers(search, role, status),
-    refetchInterval: 3000,
   });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -98,6 +96,7 @@ function UserManagement() {
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
               <SelectItem value="Admin">Admin</SelectItem>
+              <SelectItem value="SUB_ADMIN">Sub Admin</SelectItem>
               <SelectItem value="Mureed">Mureed</SelectItem>
             </SelectContent>
           </Select>
@@ -108,27 +107,27 @@ function UserManagement() {
             <SelectContent>
               <SelectItem value="all">All Account Status</SelectItem>
               <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Inactive">Inactive</SelectItem>
-              <SelectItem value="Pending Setup">Pending Setup</SelectItem>
+              <SelectItem value="Disabled">Disabled</SelectItem>
+              <SelectItem value="PASSWORD_CHANGE_REQUIRED">Password Reset Req</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
+          <table className="w-full min-w-[700px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-3 py-3 font-medium">Name</th>
                 <th className="px-3 py-3 font-medium">Email</th>
                 <th className="px-3 py-3 font-medium">Role</th>
-                <th className="px-3 py-3 font-medium">Account Status</th>
+                <th className="px-3 py-3 font-medium">Status</th>
                 <th className="px-3 py-3 font-medium">Created Date</th>
                 <th className="px-3 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                Array.from({ length: 6 }).map((_, i) => (
+                Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-border/70">
                     <td colSpan={6} className="px-3 py-3">
                       <Skeleton className="h-5 w-full" />
@@ -137,63 +136,66 @@ function UserManagement() {
                 ))
               ) : data && data.length > 0 ? (
                 data.map((u) => {
-                  const canManage = !isSubAdmin || u.role === "Mureed";
+                  const isMureed = u.role === "Mureed";
+                  const canManage = isSubAdmin ? isMureed : u.adminRole !== "MAIN_ADMIN";
+
                   return (
                     <tr key={u.id} className="border-b border-border/70 hover:bg-muted/50">
                       <td className="px-3 py-3 font-medium">{u.name}</td>
-                      <td className="px-3 py-3 text-muted-foreground font-mono text-xs sm:text-sm">{u.email}</td>
+                      <td className="px-3 py-3 text-muted-foreground">{u.email}</td>
                       <td className="px-3 py-3">
-                        <StatusBadge value={u.role} />
+                        <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
+                          {u.adminRole === "MAIN_ADMIN"
+                            ? "Super Admin"
+                            : u.adminRole === "SUB_ADMIN"
+                              ? "Sub Admin"
+                              : u.role}
+                        </span>
                       </td>
                       <td className="px-3 py-3">
                         <StatusBadge value={u.accountStatus} />
                       </td>
                       <td className="px-3 py-3">{formatDate(u.createdDate)}</td>
-                      <td className="px-3 py-3">
-                        <div className="flex justify-end">
+                      <td className="px-3 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Select
+                            value={u.accountStatus}
+                            disabled={!canManage}
+                            onValueChange={async (next) => {
+                              try {
+                                await setAccountStatus(u.id, next as AppUser["accountStatus"]);
+                                toast.success("Status updated", { description: u.email });
+                                refresh();
+                              } catch (err: any) {
+                                toast.error(err.message || "Failed to update status");
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 w-28 text-xs" aria-label="Change status">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Active">Active</SelectItem>
+                              <SelectItem value="Disabled">Disabled</SelectItem>
+                              <SelectItem value="PASSWORD_CHANGE_REQUIRED">Reset Req</SelectItem>
+                            </SelectContent>
+                          </Select>
+
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" aria-label={`Actions for ${u.name}`}>
+                              <Button variant="ghost" size="icon" className="size-8" aria-label="Open menu">
                                 <MoreHorizontal className="size-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                disabled={!canManage || u.accountStatus === "Active" || u.email.toLowerCase() === MAIN_ADMIN_EMAIL.toLowerCase()}
-                                onClick={async () => {
-                                  try {
-                                    await setAccountStatus(u.id, "Active");
-                                    toast.success("Account activated", { description: u.email });
-                                    refresh();
-                                  } catch (err: any) {
-                                    toast.error(err.message || "Failed to activate account");
-                                  }
-                                }}
-                              >
-                                Activate account
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                disabled={!canManage || u.accountStatus === "Inactive" || u.email.toLowerCase() === MAIN_ADMIN_EMAIL.toLowerCase()}
-                                onClick={async () => {
-                                  try {
-                                    await setAccountStatus(u.id, "Inactive");
-                                    toast.success("Account deactivated", { description: u.email });
-                                    refresh();
-                                  } catch (err: any) {
-                                    toast.error(err.message || "Failed to deactivate account");
-                                  }
-                                }}
-                              >
-                                Deactivate account
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
                                 disabled={!canManage || u.role !== "Mureed"}
                                 onClick={async () => {
                                   try {
                                     await resendSetupEmail(u.id);
-                                    toast.success("Account setup email sent", { description: u.email });
+                                    toast.success("Setup email sent", { description: u.email });
                                   } catch (err: any) {
-                                    toast.error(err.message || "Failed to resend setup email");
+                                    toast.error(err.message || "Failed to send email");
                                   }
                                 }}
                               >
@@ -239,12 +241,15 @@ function UserManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              loading={deleting}
+              loadingText="Deleting..."
               onClick={async (e) => {
                 e.preventDefault();
                 if (toDelete) {
+                  setDeleting(true);
                   try {
                     await deleteUser(toDelete.id);
                     toast.success("Account deleted", { description: toDelete.email });
@@ -255,12 +260,14 @@ function UserManagement() {
                     queryClient.invalidateQueries({ queryKey: ["overview"] });
                   } catch (err: any) {
                     toast.error(err.message || "Failed to delete account");
+                  } finally {
+                    setDeleting(false);
                   }
                 }
               }}
             >
               Delete
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

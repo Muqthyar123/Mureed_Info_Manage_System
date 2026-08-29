@@ -6,11 +6,19 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
+        throwOnError: false,
         retry: (failureCount, error) => {
-          if (error instanceof Error && (error.message.includes("401") || error.message.includes("403") || error.message.includes("Unauthorized") || error.message.includes("Authentication required"))) {
+          if (
+            error instanceof Error &&
+            (error.message.includes("401") ||
+              error.message.includes("403") ||
+              error.message.includes("Unauthorized") ||
+              error.message.includes("Authentication required") ||
+              error.message.includes("Invalid or expired token"))
+          ) {
             return false;
           }
-          return failureCount < 2;
+          return failureCount < 1;
         },
         refetchOnWindowFocus: false,
       },

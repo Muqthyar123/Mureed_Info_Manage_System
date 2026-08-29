@@ -275,8 +275,8 @@ export function MureedForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={submitting}>
-          {submitting ? "Saving…" : submitLabel}
+        <Button type="submit" loading={submitting}>
+          {submitLabel}
         </Button>
       </div>
     </form>

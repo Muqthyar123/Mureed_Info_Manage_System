@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -25,6 +26,7 @@ import {
   deleteAdminRequest,
   listAdminApprovalRequests,
   rejectAdminRequest,
+  MAIN_ADMIN_EMAIL,
 } from "@/services/authService";
 import type { AdminApprovalRequest } from "@/types";
 import { formatDate } from "@/utils/age";
@@ -48,14 +50,17 @@ function AdminDashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ["overview"],
     queryFn: getOverviewStats,
-    refetchInterval: 3000,
+    retry: false,
   });
-  const isMainAdmin = user?.adminRole === "MAIN_ADMIN";
+  const isMainAdmin =
+    user?.adminRole === "MAIN_ADMIN" ||
+    user?.role === "SUPER_ADMIN" ||
+    user?.email?.toLowerCase() === MAIN_ADMIN_EMAIL.toLowerCase();
   const { data: requests, isLoading: requestsLoading } = useQuery({
     queryKey: ["admin-approval-requests"],
     queryFn: listAdminApprovalRequests,
     enabled: isMainAdmin,
-    refetchInterval: 3000,
+    retry: false,
   });
 
   const refreshRequests = () => {
@@ -144,6 +149,17 @@ function AdminApprovalRequests({
   onReject: (request: AdminApprovalRequest) => Promise<void>;
   onDelete: (request: AdminApprovalRequest) => Promise<void>;
 }) {
+  const [activeAction, setActiveAction] = useState<string | null>(null);
+
+  const handleAction = async (id: string, type: "approve" | "reject" | "delete", fn: () => Promise<void>) => {
+    setActiveAction(`${id}-${type}`);
+    try {
+      await fn();
+    } finally {
+      setActiveAction(null);
+    }
+  };
+
   return (
     <section className="mt-8">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -172,46 +188,60 @@ function AdminApprovalRequests({
                   </tr>
                 ))
               ) : requests.length > 0 ? (
-                requests.map((request) => (
-                  <tr key={request.id} className="border-b border-border/70 hover:bg-muted/50">
-                    <td className="px-3 py-3 font-medium">{request.name}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{request.email}</td>
-                    <td className="px-3 py-3">
-                      <StatusBadge value={request.status} />
-                    </td>
-                    <td className="px-3 py-3 capitalize">{request.authMethod}</td>
-                    <td className="px-3 py-3">{formatDate(request.requestedDate)}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          disabled={request.status !== "PENDING"}
-                          onClick={() => onApprove(request)}
-                        >
-                          <Check className="size-4" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={request.status !== "PENDING"}
-                          onClick={() => onReject(request)}
-                        >
-                          <X className="size-4" />
-                          Reject
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => onDelete(request)}
-                        >
-                          <Trash2 className="size-4" />
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                requests.map((request) => {
+                  const isApproving = activeAction === `${request.id}-approve`;
+                  const isRejecting = activeAction === `${request.id}-reject`;
+                  const isDeleting = activeAction === `${request.id}-delete`;
+                  const isBusy = activeAction !== null;
+
+                  return (
+                    <tr key={request.id} className="border-b border-border/70 hover:bg-muted/50">
+                      <td className="px-3 py-3 font-medium">{request.name}</td>
+                      <td className="px-3 py-3 text-muted-foreground">{request.email}</td>
+                      <td className="px-3 py-3">
+                        <StatusBadge value={request.status} />
+                      </td>
+                      <td className="px-3 py-3 capitalize">{request.authMethod}</td>
+                      <td className="px-3 py-3">{formatDate(request.requestedDate)}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            disabled={request.status !== "PENDING" || isBusy}
+                            loading={isApproving}
+                            loadingText="Approving..."
+                            onClick={() => handleAction(request.id, "approve", () => onApprove(request))}
+                          >
+                            {!isApproving && <Check className="size-4" />}
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={request.status !== "PENDING" || isBusy}
+                            loading={isRejecting}
+                            loadingText="Rejecting..."
+                            onClick={() => handleAction(request.id, "reject", () => onReject(request))}
+                          >
+                            {!isRejecting && <X className="size-4" />}
+                            Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={isBusy}
+                            loading={isDeleting}
+                            loadingText="Deleting..."
+                            onClick={() => handleAction(request.id, "delete", () => onDelete(request))}
+                          >
+                            {!isDeleting && <Trash2 className="size-4" />}
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={6} className="px-3 py-16 text-center">

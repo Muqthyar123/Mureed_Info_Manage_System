@@ -67,7 +67,17 @@ def current_user(
     token = authorization.removeprefix("Bearer ").strip()
     settings = get_settings()
 
-    if settings.use_supabase_auth:
+    # Performance fast-path: check local JWT first (0.01ms)
+    user = None
+    try:
+        payload = decode_token(token)
+        user_id = payload.get("sub")
+        if user_id:
+            user = db.get(models.UserAccount, user_id)
+    except Exception:
+        pass
+
+    if not user and settings.use_supabase_auth:
         try:
             supabase_user = SupabaseAuthClient(settings).get_user(token)
             user_id = supabase_user.get("id")
@@ -80,16 +90,8 @@ def current_user(
                     )
                 )
             )
-        except HTTPException as exc:
-            print(f"[SECURITY DEBUG] Supabase get_user HTTPException: {exc.status_code} - {exc.detail}")
-            raise
         except Exception as exc:
-            print(f"[SECURITY DEBUG] Supabase get_user Exception: {exc}")
-            payload = decode_token(token)
-            user = db.get(models.UserAccount, payload.get("sub"))
-    else:
-        payload = decode_token(token)
-        user = db.get(models.UserAccount, payload.get("sub"))
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token.") from exc
 
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User account was not found.")

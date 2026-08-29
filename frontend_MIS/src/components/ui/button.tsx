@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -32,15 +33,109 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  loading?: boolean;
+  loadingText?: string;
+}
+
+function getLoadingLabel(children: React.ReactNode, explicitLoadingText?: string): string {
+  if (explicitLoadingText) return explicitLoadingText;
+  let text = "";
+  if (typeof children === "string") {
+    text = children.trim();
+  } else if (Array.isArray(children)) {
+    text = children.map((c) => (typeof c === "string" ? c : "")).join(" ").trim();
+  }
+  if (!text) return "Processing...";
+
+  const lower = text.toLowerCase();
+  if (lower.startsWith("delete")) {
+    return text.replace(/^delete/i, "Deleting") + (text.endsWith("...") ? "" : "...");
+  }
+  if (lower.startsWith("add")) {
+    return text.replace(/^add/i, "Adding") + (text.endsWith("...") ? "" : "...");
+  }
+  if (lower.startsWith("save")) {
+    return text.replace(/^save/i, "Saving") + (text.endsWith("...") ? "" : "...");
+  }
+  if (lower.startsWith("create")) {
+    return text.replace(/^create/i, "Creating") + (text.endsWith("...") ? "" : "...");
+  }
+  if (lower.startsWith("approve")) {
+    return text.replace(/^approve/i, "Approving") + (text.endsWith("...") ? "" : "...");
+  }
+  if (lower.startsWith("reject")) {
+    return text.replace(/^reject/i, "Rejecting") + (text.endsWith("...") ? "" : "...");
+  }
+  if (lower.startsWith("export")) {
+    return text.replace(/^export/i, "Exporting") + (text.endsWith("...") ? "" : "...");
+  }
+  if (lower.includes("login") || lower.includes("log in")) {
+    return "Logging in...";
+  }
+  if (lower.startsWith("submit")) {
+    return text.replace(/^submit/i, "Submitting") + (text.endsWith("...") ? "" : "...");
+  }
+  if (lower.startsWith("resend")) {
+    return text.replace(/^resend/i, "Sending") + (text.endsWith("...") ? "" : "...");
+  }
+  if (lower.startsWith("send")) {
+    return text.replace(/^send/i, "Sending") + (text.endsWith("...") ? "" : "...");
+  }
+  if (lower.startsWith("update")) {
+    return text.replace(/^update/i, "Updating") + (text.endsWith("...") ? "" : "...");
+  }
+  return `${text}...`;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      loading = false,
+      loadingText,
+      disabled,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
+    if (asChild) {
+      return (
+        <Slot
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          {...props}
+        >
+          {children}
+        </Slot>
+      );
+    }
+
+    const isLoading = Boolean(loading);
+
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <button
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        disabled={disabled || isLoading}
+        aria-busy={isLoading}
+        {...props}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="size-4 animate-spin shrink-0" />
+            <span>{getLoadingLabel(children, loadingText)}</span>
+          </>
+        ) : (
+          children
+        )}
+      </button>
     );
   },
 );

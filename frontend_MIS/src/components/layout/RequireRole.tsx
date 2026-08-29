@@ -11,7 +11,8 @@ export function RequireRole({ role, children }: { role: UserRole; children: Reac
   const isAllowed = Boolean(
     user && (
       role === "Admin"
-        ? ["Admin", "SUB_ADMIN", "SUPER_ADMIN", "MAIN_ADMIN"].includes(user.role)
+        ? ["Admin", "SUB_ADMIN", "SUPER_ADMIN", "MAIN_ADMIN"].includes(user.role) ||
+          ["Admin", "SUB_ADMIN", "SUPER_ADMIN", "MAIN_ADMIN"].includes(user.adminRole || "")
         : ["Mureed", "MUREED"].includes(user.role)
     )
   );
@@ -19,9 +20,10 @@ export function RequireRole({ role, children }: { role: UserRole; children: Reac
   useEffect(() => {
     if (!ready) return;
     if (!user) {
-      navigate({ to: role === "Admin" ? "/sub-admin-login" : "/mureed-login", replace: true });
+      navigate({ to: role === "Admin" ? "/admin-login" : "/mureed-login", replace: true });
     } else if (!isAllowed) {
-      const target = ["Admin", "SUB_ADMIN", "SUPER_ADMIN", "MAIN_ADMIN"].includes(user.role)
+      const target = ["Admin", "SUB_ADMIN", "SUPER_ADMIN", "MAIN_ADMIN"].includes(user.role) ||
+        ["Admin", "SUB_ADMIN", "SUPER_ADMIN", "MAIN_ADMIN"].includes(user.adminRole || "")
         ? "/admin/dashboard"
         : "/mureed/dashboard";
       navigate({ to: target, replace: true });

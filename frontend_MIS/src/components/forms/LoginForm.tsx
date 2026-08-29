@@ -147,8 +147,8 @@ export function LoginForm({
               </p>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in…" : submitLabel}
+            <Button type="submit" className="w-full" loading={loading} loadingText="Signing in...">
+              {submitLabel}
             </Button>
 
             {onGoogleSubmit && (

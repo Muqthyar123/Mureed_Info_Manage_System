@@ -77,13 +77,11 @@ function MureedManagement() {
   const { data: peerNames = [] } = useQuery({
     queryKey: ["peer-names"],
     queryFn: listPeerNames,
-    refetchInterval: 3000,
   });
 
   const { data: locations = [] } = useQuery({
     queryKey: ["locations"],
     queryFn: listLocations,
-    refetchInterval: 3000,
   });
 
   const query = {
@@ -102,7 +100,6 @@ function MureedManagement() {
     queryKey: ["mureeds", query],
     queryFn: () => listMureeds(query),
     placeholderData: keepPreviousData,
-    refetchInterval: 3000,
   });
 
   const total = data?.total ?? 0;
@@ -360,15 +357,17 @@ function MureedManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
+              variant="destructive"
+              loading={deleting}
+              loadingText="Deleting..."
               onClick={(e) => {
                 e.preventDefault();
                 confirmDelete();
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? "Deleting…" : "Delete"}
-            </AlertDialogAction>
+              Delete
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

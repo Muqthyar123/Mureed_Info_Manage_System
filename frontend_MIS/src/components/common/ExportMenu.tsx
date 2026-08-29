@@ -44,9 +44,9 @@ export function ExportMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" disabled={disabled || busy}>
-          <Download className="size-4" />
-          {busy ? "Exporting…" : "Export"}
+        <Button variant="outline" disabled={disabled} loading={busy} loadingText="Exporting...">
+          {!busy && <Download className="size-4" />}
+          Export
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">

@@ -64,11 +64,12 @@ function PeerManagement() {
   const [name, setName] = useState("");
   const [formStatus, setFormStatus] = useState<"Active" | "Inactive">("Active");
   const [toDelete, setToDelete] = useState<PeerRow | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["peer", search, status],
     queryFn: () => listPeer(search, status),
-    refetchInterval: 3000,
   });
 
   const refresh = () => {
@@ -108,6 +109,7 @@ function PeerManagement() {
       toast.error("Peer Name is required.");
       return;
     }
+    setSaving(true);
     try {
       if (editing) {
         await updatePeer(editing.id, name.trim(), formStatus);
@@ -121,6 +123,8 @@ function PeerManagement() {
       refresh();
     } catch (err: any) {
       toast.error(err.message || "Failed to save Peer.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -275,6 +279,7 @@ function PeerManagement() {
           <DialogFooter>
             <Button
               variant="outline"
+              disabled={saving}
               onClick={() => {
                 setCreating(false);
                 setEditing(null);
@@ -282,7 +287,9 @@ function PeerManagement() {
             >
               Cancel
             </Button>
-            <Button onClick={save}>{editing ? "Save Changes" : "Add Peer"}</Button>
+            <Button loading={saving} onClick={save}>
+              {editing ? "Save Changes" : "Add Peer"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -296,12 +303,15 @@ function PeerManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              loading={deleting}
+              loadingText="Deleting..."
               onClick={async (e) => {
                 e.preventDefault();
                 if (toDelete) {
+                  setDeleting(true);
                   try {
                     await deletePeer(toDelete.id);
                     toast.success("Peer deleted", { description: toDelete.name });
@@ -309,12 +319,14 @@ function PeerManagement() {
                     refresh();
                   } catch (err: any) {
                     toast.error(err.message || "Failed to delete Peer.");
+                  } finally {
+                    setDeleting(false);
                   }
                 }
               }}
             >
               Delete
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
