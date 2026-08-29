@@ -177,6 +177,15 @@ def delete_user(
             if mureed:
                 db.delete(mureed)
 
+        # Delete any corresponding AdminApprovalRequest records from database
+        approval_reqs = db.scalars(
+            select(models.AdminApprovalRequest).where(
+                func.lower(models.AdminApprovalRequest.email) == row.email.strip().lower()
+            )
+        ).all()
+        for req in approval_reqs:
+            db.delete(req)
+
         if settings.use_supabase_auth:
             try:
                 client = SupabaseAuthClient(settings)

@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LoginForm } from "@/components/forms/LoginForm";
 import { useAuth } from "@/context/AuthContext";
 
+import { toast } from "sonner";
+
 export const Route = createFileRoute("/mureed-login")({
   head: () => ({
     meta: [
@@ -28,8 +30,13 @@ function MureedLoginPage() {
       emailLabel="Registered Email"
       emailPlaceholder="mureed@example.com"
       onSubmit={async (email, password) => {
-        await signInMureed(email, password);
-        navigate({ to: "/mureed/dashboard", replace: true });
+        const user = await signInMureed(email, password);
+        if (user.accountStatus === "PASSWORD_CHANGE_REQUIRED") {
+          toast.info("Password change required", { description: "Please set a new password for your account." });
+          navigate({ to: "/change-password", replace: true });
+        } else {
+          navigate({ to: "/mureed/dashboard", replace: true });
+        }
       }}
     />
   );

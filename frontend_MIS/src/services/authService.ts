@@ -141,6 +141,10 @@ export async function rejectAdminRequest(requestId: string): Promise<void> {
   await apiRequest<void>(`/auth/admin/approval-requests/${requestId}/reject`, { method: "POST" });
 }
 
+export async function deleteAdminRequest(requestId: string): Promise<void> {
+  await apiRequest<void>(`/auth/admin/approval-requests/${requestId}`, { method: "DELETE" });
+}
+
 export function persistUser(user: AuthUser | null) {
   if (typeof window === "undefined") return;
   if (user) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user));

@@ -250,6 +250,7 @@ function UserManagement() {
                     toast.success("Account deleted", { description: toDelete.email });
                     setToDelete(null);
                     refresh();
+                    queryClient.invalidateQueries({ queryKey: ["admin-approval-requests"] });
                     queryClient.invalidateQueries({ queryKey: ["mureeds"] });
                     queryClient.invalidateQueries({ queryKey: ["overview"] });
                   } catch (err: any) {

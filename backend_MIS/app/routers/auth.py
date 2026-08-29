@@ -590,3 +590,36 @@ def reject_admin_request(request_id: str, _: models.UserAccount = Depends(requir
     email_service.send_sub_admin_rejection_notification(request.email, request.name)
 
 
+@router.delete("/admin/approval-requests/{request_id}", status_code=204)
+def delete_admin_request(request_id: str, _: models.UserAccount = Depends(require_main_admin), db: Session = Depends(get_db)):
+    request = db.get(models.AdminApprovalRequest, request_id)
+    if not request:
+        raise HTTPException(status_code=404, detail="Admin approval request was not found.")
+
+    settings = get_settings()
+    req_email = request.email.strip().lower()
+
+    user = db.scalar(
+        select(models.UserAccount).where(
+            func.lower(models.UserAccount.email) == req_email
+        )
+    )
+    if user:
+        if user.admin_role in ("MAIN_ADMIN", "SUPER_ADMIN") or user.email.lower() == settings.main_admin_email.lower():
+            raise HTTPException(status_code=403, detail="Super Admin accounts cannot be deleted.")
+        db.delete(user)
+
+    if settings.use_supabase_auth:
+        try:
+            client = SupabaseAuthClient(settings)
+            sp_user = client.get_user_by_email(request.email)
+            if sp_user and sp_user.get("id"):
+                client.delete_user(sp_user["id"])
+        except Exception:
+            pass
+
+    db.delete(request)
+    db.commit()
+
+
+

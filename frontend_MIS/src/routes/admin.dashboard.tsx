@@ -8,6 +8,7 @@ import {
   List,
   Network,
   Plus,
+  Trash2,
   UserCheck,
   Users,
   X,
@@ -21,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import {
   approveAdminRequest,
+  deleteAdminRequest,
   listAdminApprovalRequests,
   rejectAdminRequest,
 } from "@/services/authService";
@@ -56,8 +58,11 @@ function AdminDashboard() {
     refetchInterval: 3000,
   });
 
-  const refreshRequests = () =>
+  const refreshRequests = () => {
     queryClient.invalidateQueries({ queryKey: ["admin-approval-requests"] });
+    queryClient.invalidateQueries({ queryKey: ["users"] });
+    queryClient.invalidateQueries({ queryKey: ["overview"] });
+  };
 
   return (
     <>
@@ -115,6 +120,11 @@ function AdminDashboard() {
             toast.success("Admin request rejected", { description: request.email });
             refreshRequests();
           }}
+          onDelete={async (request) => {
+            await deleteAdminRequest(request.id);
+            toast.success("Admin request deleted", { description: request.email });
+            refreshRequests();
+          }}
         />
       )}
     </>
@@ -126,11 +136,13 @@ function AdminApprovalRequests({
   loading,
   onApprove,
   onReject,
+  onDelete,
 }: {
   requests: AdminApprovalRequest[];
   loading: boolean;
   onApprove: (request: AdminApprovalRequest) => Promise<void>;
   onReject: (request: AdminApprovalRequest) => Promise<void>;
+  onDelete: (request: AdminApprovalRequest) => Promise<void>;
 }) {
   return (
     <section className="mt-8">
@@ -187,6 +199,14 @@ function AdminApprovalRequests({
                         >
                           <X className="size-4" />
                           Reject
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => onDelete(request)}
+                        >
+                          <Trash2 className="size-4" />
+                          Delete
                         </Button>
                       </div>
                     </td>
