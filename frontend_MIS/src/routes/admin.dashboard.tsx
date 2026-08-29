@@ -20,6 +20,16 @@ import { StatusBadge } from "@/components/layout/StatusBadge";
 import { StatCard } from "@/components/layout/StatCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/context/AuthContext";
 import {
   approveAdminRequest,
@@ -150,6 +160,7 @@ function AdminApprovalRequests({
   onDelete: (request: AdminApprovalRequest) => Promise<void>;
 }) {
   const [activeAction, setActiveAction] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<AdminApprovalRequest | null>(null);
 
   const handleAction = async (id: string, type: "approve" | "reject" | "delete", fn: () => Promise<void>) => {
     setActiveAction(`${id}-${type}`);
@@ -232,7 +243,7 @@ function AdminApprovalRequests({
                             disabled={isBusy}
                             loading={isDeleting}
                             loadingText="Deleting..."
-                            onClick={() => handleAction(request.id, "delete", () => onDelete(request))}
+                            onClick={() => setToDelete(request)}
                           >
                             {!isDeleting && <Trash2 className="size-4" />}
                             Delete
@@ -257,6 +268,35 @@ function AdminApprovalRequests({
           </table>
         </div>
       </div>
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Admin Approval Request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the approval request for{" "}
+              <span className="font-semibold text-foreground">{toDelete?.name}</span> ({toDelete?.email})? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={activeAction !== null}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={activeAction !== null}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (toDelete) {
+                  const req = toDelete;
+                  await handleAction(req.id, "delete", () => onDelete(req));
+                  setToDelete(null);
+                }
+              }}
+            >
+              {activeAction?.endsWith("-delete") ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

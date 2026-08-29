@@ -7,8 +7,12 @@ Welcome to the **Mureed Information Management System (MIMS)** frontend workspac
 ## 🌟 Key Features & Capabilities
 
 - **Modern SaaS UI/UX**: Designed with React 18, Vite, TanStack Router (file-based SSR/CSR routing), TanStack Query, Tailwind CSS, and Shadcn UI.
+- **Interactive Button Loading States & Confirmation Modals**:
+  - Dynamic visual spinners and active status labels (`Signing in...`, `Approving...`, `Rejecting...`, `Deleting...`, `Adding...`, `Saving...`, `Exporting...`).
+  - Pre-action confirmation alert dialogs before deleting Admin approval requests, Sub Admin accounts, Mureed records, or Peer records.
 - **Real-World Authentication & Security**:
   - Integrated with **Supabase Auth Cloud** and **FastAPI** backend for genuine JWT token issuance and verification.
+  - Optimized in-memory JWT fast-path token decoding providing sub-5ms response times.
   - Hashed password storage using **PBKDF2-HMAC-SHA256**.
   - Strict role-based access control (RBAC) across **Super Admin**, **Sub Admin**, and **Mureed** portals.
 - **Real-Time Data Synchronization**:
