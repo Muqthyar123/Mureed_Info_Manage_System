@@ -181,9 +181,5 @@ export async function getMe(): Promise<AuthUser | null> {
 
 export const DEMO_CREDENTIALS = {
   adminEmail: "admin@mims.app",
-  adminPassword: "Admin@123",
   mainAdminEmail: MAIN_ADMIN_EMAIL,
-  mainAdminPassword: "@Saifulla_123",
-  mockOtp: "123456",
-  mureedPassword: "@Mureed_123",
 };

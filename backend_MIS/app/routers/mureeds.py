@@ -173,10 +173,9 @@ def create_mureed(input: schemas.MureedBase, _: models.UserAccount = Depends(req
     )
     db.add(row)
 
-    # Create associated Mureed Auth User Account
-    default_pw = "@Mureed_123"
-    user_id = f"usr-{mureed_id}"
     settings = get_settings()
+    default_pw = settings.default_mureed_password
+    user_id = f"usr-{mureed_id}"
 
     if settings.use_supabase_auth:
         client = SupabaseAuthClient(settings)
@@ -220,7 +219,8 @@ def resend_mureed_invitation(mureed_id: str, _: models.UserAccount = Depends(req
     if not row:
         raise HTTPException(status_code=404, detail="Mureed not found")
     
-    default_pw = "@Mureed_123"
+    settings = get_settings()
+    default_pw = settings.default_mureed_password
     sent = email_service.send_mureed_welcome_email(row.email, row.name, initial_password=default_pw)
     if not sent:
         raise HTTPException(status_code=500, detail="Could not send invitation email via Brevo.")

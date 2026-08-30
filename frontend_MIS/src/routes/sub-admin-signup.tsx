@@ -18,6 +18,8 @@ export const Route = createFileRoute("/sub-admin-signup")({
   component: SubAdminSignupPage,
 });
 
+import { playNotificationSound } from "@/utils/sound";
+
 function SubAdminSignupPage() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -37,6 +39,7 @@ function SubAdminSignupPage() {
     try {
       await signupSubAdmin(name, email, password);
       setSubmitted(true);
+      playNotificationSound();
       toast.success("Application submitted successfully.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Signup failed.");

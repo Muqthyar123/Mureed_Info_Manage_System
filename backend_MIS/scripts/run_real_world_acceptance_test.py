@@ -28,7 +28,7 @@ def test_system():
     # ----------------------------------------------------
     print("\n--- [1/5] SUPER ADMIN LOGIN & API TEST ---")
     super_email = settings.main_admin_email
-    super_pass = "@Saifulla_123"
+    super_pass = settings.main_admin_password
     print(f"Attempting login for: '{super_email}'")
 
     res_login = client.post("/api/auth/admin/login", json={"email": super_email, "password": super_pass})
@@ -96,7 +96,7 @@ def test_system():
     # 3. TEST MUREED LOGIN
     # ----------------------------------------------------
     print("\n--- [3/5] MUREED LOGIN & PROFILE ISOLATION TEST ---")
-    res_mureed_login = client.post("/api/auth/mureed/login", json={"email": test_mureed_email, "password": "@Mureed_123"})
+    res_mureed_login = client.post("/api/auth/mureed/login", json={"email": test_mureed_email, "password": settings.default_mureed_password})
     print(f"POST /api/auth/mureed/login Status: {res_mureed_login.status_code}")
     assert res_mureed_login.status_code == 200, f"Mureed login failed: {res_mureed_login.text}"
     
@@ -120,7 +120,8 @@ def test_system():
     # ----------------------------------------------------
     print("\n--- [4/5] SUB ADMIN SIGNUP, APPROVAL & PERMISSIONS TEST ---")
     sub_email = f"testsubadmin_{uuid.uuid4().hex[:6]}@mims.app"
-    res_sub_signup = client.post("/api/auth/sub-admin/signup", json={"name": "Test SubAdmin", "email": sub_email, "password": "SubAdmin@123"})
+    test_sub_pass = "TestSubAdminPass@123"
+    res_sub_signup = client.post("/api/auth/sub-admin/signup", json={"name": "Test SubAdmin", "email": sub_email, "password": test_sub_pass})
     print(f"POST /api/auth/sub-admin/signup Status: {res_sub_signup.status_code}")
     assert res_sub_signup.status_code == 201
 
@@ -139,7 +140,7 @@ def test_system():
     assert res_approve.status_code in (200, 204)
 
     # Sub Admin logs in
-    res_sub_login = client.post("/api/auth/sub-admin/login", json={"email": sub_email, "password": "SubAdmin@123"})
+    res_sub_login = client.post("/api/auth/sub-admin/login", json={"email": sub_email, "password": test_sub_pass})
     print(f"POST /api/auth/sub-admin/login Status: {res_sub_login.status_code}")
     assert res_sub_login.status_code == 200
 

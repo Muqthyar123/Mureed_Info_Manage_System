@@ -52,6 +52,8 @@ export const Route = createFileRoute("/admin/users")({
   component: UserManagement,
 });
 
+import { playNotificationSound } from "@/utils/sound";
+
 function UserManagement() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -193,6 +195,7 @@ function UserManagement() {
                                 onClick={async () => {
                                   try {
                                     await resendSetupEmail(u.id);
+                                    playNotificationSound();
                                     toast.success("Setup email sent", { description: u.email });
                                   } catch (err: any) {
                                     toast.error(err.message || "Failed to send email");

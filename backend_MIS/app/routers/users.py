@@ -139,7 +139,8 @@ def resend_setup_email(
     if is_sub_admin and row.role != "Mureed":
         raise HTTPException(status_code=403, detail="Sub Admins can only resend setup emails to Mureed accounts.")
 
-    default_pw = "@Mureed_123"
+    settings = get_settings()
+    default_pw = settings.default_mureed_password
     email_service.send_mureed_welcome_email(row.email, row.name, initial_password=default_pw)
     u_out = user_out(row)
     if is_sub_admin and row.role != "Mureed" and row.email.strip().lower() != current_user.email.strip().lower():

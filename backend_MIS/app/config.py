@@ -12,6 +12,14 @@ class Settings(BaseSettings):
         "aasthanakhadariyaaskariya.admin@gmail.com",
         validation_alias=AliasChoices("MAIN_ADMIN_EMAIL", "MIMS_MAIN_ADMIN_EMAIL"),
     )
+    main_admin_password: str = Field(
+        "@Saifulla_123",
+        validation_alias=AliasChoices("MAIN_ADMIN_PASSWORD", "MIMS_MAIN_ADMIN_PASSWORD"),
+    )
+    default_mureed_password: str = Field(
+        "@Mureed_123",
+        validation_alias=AliasChoices("DEFAULT_MUREED_PASSWORD", "MIMS_DEFAULT_MUREED_PASSWORD"),
+    )
     demo_otp: str = "123456"
     otp_ttl_seconds: int = 600
     frontend_origins: str = "http://localhost:5173,http://127.0.0.1:5173"

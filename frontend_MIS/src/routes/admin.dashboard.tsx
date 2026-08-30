@@ -54,6 +54,8 @@ export const Route = createFileRoute("/admin/dashboard")({
   component: AdminDashboard,
 });
 
+import { playNotificationSound } from "@/utils/sound";
+
 function AdminDashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -127,16 +129,19 @@ function AdminDashboard() {
           loading={requestsLoading}
           onApprove={async (request) => {
             await approveAdminRequest(request.id);
+            playNotificationSound();
             toast.success("Admin request approved", { description: request.email });
             refreshRequests();
           }}
           onReject={async (request) => {
             await rejectAdminRequest(request.id);
+            playNotificationSound();
             toast.success("Admin request rejected", { description: request.email });
             refreshRequests();
           }}
           onDelete={async (request) => {
             await deleteAdminRequest(request.id);
+            playNotificationSound();
             toast.success("Admin request deleted", { description: request.email });
             refreshRequests();
           }}

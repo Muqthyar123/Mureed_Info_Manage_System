@@ -33,7 +33,7 @@ try:
     accounts = db.query(UserAccount).all()
     for acc in accounts:
         email = acc.email.lower()
-        pass_to_set = "@Saifulla_123" if acc.email.lower() == settings.main_admin_email.lower() else ("SubAdmin@123" if acc.role in ("Admin", "SUB_ADMIN") else "@Mureed_123")
+        pass_to_set = settings.main_admin_password if acc.email.lower() == settings.main_admin_email.lower() else settings.default_mureed_password
         
         # Always update local password_hash in PostgreSQL
         acc.password_hash = hash_password(pass_to_set)
@@ -67,7 +67,7 @@ try:
 
     # Test login for Super Admin
     client = SupabaseAuthClient(settings)
-    token_res = client.sign_in_with_password(settings.main_admin_email, "@Saifulla_123")
+    token_res = client.sign_in_with_password(settings.main_admin_email, settings.main_admin_password)
     print(f"\n✅ SUPER ADMIN LOGIN TEST PASSED! Token length: {len(token_res.get('access_token', ''))}")
 
 finally:

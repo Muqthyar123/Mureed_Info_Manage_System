@@ -24,7 +24,7 @@ try:
 
     # 2. Check Super Admin
     super_admin_email = settings.main_admin_email.lower()
-    super_admin_pass = "@Saifulla_123"
+    super_admin_pass = settings.main_admin_password
     
     super_admin = db.query(UserAccount).filter(UserAccount.email.ilike(super_admin_email)).first()
     if not super_admin:
@@ -51,9 +51,9 @@ try:
         super_admin.account_status = "Active"
         super_admin.admin_access_status = "ACTIVE"
         db.commit()
-        print(f"\nUpdated Super Admin {super_admin_email} in PostgreSQL with password @Saifulla_123")
+        print(f"\nUpdated Super Admin {super_admin_email} in PostgreSQL")
 
-    # 3. Ensure Super Admin exists in Supabase Auth cloud with password @Saifulla_123
+    # 3. Ensure Super Admin exists in Supabase Auth cloud
     if settings.use_supabase_auth:
         client = SupabaseAuthClient(settings)
         print("\nSyncing Super Admin into Supabase Auth Cloud...")

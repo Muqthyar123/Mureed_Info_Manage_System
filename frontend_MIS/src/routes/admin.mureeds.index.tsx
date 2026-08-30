@@ -51,6 +51,8 @@ export const Route = createFileRoute("/admin/mureeds/")({
   component: MureedManagement,
 });
 
+import { playNotificationSound } from "@/utils/sound";
+
 function MureedManagement() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -301,6 +303,7 @@ function MureedManagement() {
                             try {
                               const { resendMureedInvitation } = await import("@/services/mureedService");
                               await resendMureedInvitation(m.id);
+                              playNotificationSound();
                               toast.success(`Invitation email sent to ${m.email}`);
                             } catch {
                               toast.error(`Could not resend invitation to ${m.email}`);

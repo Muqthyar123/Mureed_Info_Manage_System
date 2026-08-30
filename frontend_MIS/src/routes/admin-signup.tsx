@@ -81,7 +81,7 @@ function AdminSignupPage() {
       const next = await startAdminSignup(name, email, password);
       setSignup(next);
       setOtp("");
-      toast.success("Mock OTP sent", { description: `Use ${DEMO_CREDENTIALS.mockOtp}` });
+      toast.success("Verification code sent", { description: "Check your email for the OTP" });
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Could not start Admin signup.");
     } finally {
@@ -115,7 +115,7 @@ function AdminSignupPage() {
     setSignup(next);
     setOtp("");
     setFormError(null);
-    toast.success("Mock OTP resent", { description: `Use ${DEMO_CREDENTIALS.mockOtp}` });
+    toast.success("Verification code resent", { description: "Check your email for the new OTP" });
   };
 
   return (

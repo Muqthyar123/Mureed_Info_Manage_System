@@ -14,6 +14,8 @@ export const Route = createFileRoute("/forgot-password")({
   component: ForgotPasswordPage,
 });
 
+import { playNotificationSound } from "@/utils/sound";
+
 function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,6 +27,7 @@ function ForgotPasswordPage() {
     try {
       await requestPasswordReset(email);
       setSent(true);
+      playNotificationSound();
       toast.success("Password reset instructions sent.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Request failed.");

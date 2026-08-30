@@ -34,6 +34,8 @@ export const Route = createFileRoute("/admin/mureeds/add")({
   component: AddMureedPage,
 });
 
+import { playNotificationSound } from "@/utils/sound";
+
 function AddMureedPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -52,6 +54,8 @@ function AddMureedPage() {
       queryClient.invalidateQueries({ queryKey: ["mureeds"] });
       queryClient.invalidateQueries({ queryKey: ["overview"] });
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      playNotificationSound();
+      toast.success("Mureed created successfully", { description: `Invitation sent to ${mureed.email}` });
       setCreated({ email: mureed.email });
     } catch (err: any) {
       toast.error(err.message || "Could not create Mureed.");

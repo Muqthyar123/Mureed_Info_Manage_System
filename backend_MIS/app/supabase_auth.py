@@ -110,7 +110,7 @@ class SupabaseAuthClient:
             if response.status_code >= 400:
                 raise HTTPException(status_code=400, detail="Could not update Supabase Auth password.")
 
-    def ensure_supabase_user_synced(self, email: str, password: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+    def ensure_supabase_user_synced(self, email: str, password: str, metadata: dict[str, Any] | None = None, email_confirm: bool = True) -> dict[str, Any]:
         if not self.settings.supabase_service_role_key:
             return self.sign_in_with_password(email, password)
         sp_user = self.get_user_by_email(email)
@@ -126,7 +126,7 @@ class SupabaseAuthClient:
                 client.post(
                     f"{self.base_url}/auth/v1/admin/users",
                     headers=self._headers(service_role=True),
-                    json={"email": email, "password": password, "email_confirm": True, "user_metadata": metadata or {}},
+                    json={"email": email, "password": password, "email_confirm": email_confirm, "user_metadata": metadata or {}},
                 )
         return self.sign_in_with_password(email, password)
 
