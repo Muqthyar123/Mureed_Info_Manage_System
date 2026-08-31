@@ -491,8 +491,10 @@ def forgot_password(input: schemas.EmailIn, db: Session = Depends(get_db)):
     email = normalize_email(input.email)
     user = db.scalar(select(models.UserAccount).where(models.UserAccount.email == email))
     if user:
+        settings = get_settings()
         reset_token = create_token({"sub": user.id, "email": email, "type": "reset"}, expires_in=1800)
-        reset_url = f"http://localhost:8081/reset-password?token={reset_token}"
+        base_frontend_url = settings.frontend_url.rstrip("/")
+        reset_url = f"{base_frontend_url}/reset-password?token={reset_token}"
         email_service.send_password_reset_email(email, user.name, reset_url)
     return {"message": "If the email is registered, password reset instructions have been sent."}
 

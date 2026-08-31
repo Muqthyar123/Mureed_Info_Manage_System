@@ -48,7 +48,10 @@ def send_brevo_email(to_email: str, to_name: str, subject: str, html_content: st
         return False
 
 
-def send_mureed_welcome_email(email: str, name: str, initial_password: str | None = None, login_url: str = "http://localhost:8081/mureed-login") -> bool:
+def send_mureed_welcome_email(email: str, name: str, initial_password: str | None = None, login_url: str | None = None) -> bool:
+    settings = get_settings()
+    if not login_url:
+        login_url = f"{settings.frontend_url.rstrip('/')}/mureed-login"
     subject = "Welcome to MIMS - Account Details & Instructions"
     pw_html = ""
     if initial_password:
@@ -129,7 +132,10 @@ def send_sub_admin_signup_notification(email: str, name: str) -> bool:
     return send_brevo_email(email, name, subject, html)
 
 
-def send_sub_admin_approval_notification(email: str, name: str, login_url: str = "http://localhost:8081/sub-admin-login") -> bool:
+def send_sub_admin_approval_notification(email: str, name: str, login_url: str | None = None) -> bool:
+    settings = get_settings()
+    if not login_url:
+        login_url = f"{settings.frontend_url.rstrip('/')}/sub-admin-login"
     subject = "Sub Admin Account Approved - MIMS"
     html = f"""
     <!DOCTYPE html>
