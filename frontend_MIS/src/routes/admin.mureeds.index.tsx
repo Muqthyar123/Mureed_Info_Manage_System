@@ -270,9 +270,9 @@ function MureedManagement() {
                     <td className="max-w-[220px] truncate px-3 py-3 text-muted-foreground">
                       {m.address}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-3">{formatPhone(m.phone)}</td>
+                    <td className="whitespace-nowrap px-3 py-3">{formatPhone(m.phone) || <span className="text-muted-foreground/50">—</span>}</td>
                     <td className="max-w-[200px] truncate px-3 py-3 text-muted-foreground">
-                      {m.email}
+                      {m.email || <span className="text-muted-foreground/50">—</span>}
                     </td>
                     <td className="px-3 py-3">{m.peerName}</td>
                     <td className="px-3 py-3">
@@ -294,24 +294,26 @@ function MureedManagement() {
                             <Pencil className="size-4" />
                           </Button>
                         </Link>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={`Resend Brevo invitation to ${m.email}`}
-                          aria-label={`Resend invitation to ${m.name}`}
-                          onClick={async () => {
-                            try {
-                              const { resendMureedInvitation } = await import("@/services/mureedService");
-                              await resendMureedInvitation(m.id);
-                              playNotificationSound();
-                              toast.success(`Invitation email sent to ${m.email}`);
-                            } catch {
-                              toast.error(`Could not resend invitation to ${m.email}`);
-                            }
-                          }}
-                        >
-                          <Mail className="size-4" />
-                        </Button>
+                        {m.email ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={`Resend Brevo invitation to ${m.email}`}
+                            aria-label={`Resend invitation to ${m.name}`}
+                            onClick={async () => {
+                              try {
+                                const { resendMureedInvitation } = await import("@/services/mureedService");
+                                await resendMureedInvitation(m.id);
+                                playNotificationSound();
+                                toast.success(`Invitation email sent to ${m.email}`);
+                              } catch (err: any) {
+                                toast.error(err.message || `Could not resend invitation to ${m.email}`);
+                              }
+                            }}
+                          >
+                            <Mail className="size-4" />
+                          </Button>
+                        ) : null}
                         <Button
                           variant="ghost"
                           size="icon"

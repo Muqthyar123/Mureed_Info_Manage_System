@@ -12,9 +12,11 @@ export interface Mureed {
   email: string;
   peerName: string;
   status: MureedStatus;
+  message?: string | null;
+  emailSent?: boolean | null;
 }
 
-export type MureedInput = Omit<Mureed, "id">;
+export type MureedInput = Omit<Mureed, "id" | "message" | "emailSent">;
 
 export interface Peer {
   id: string;

@@ -114,8 +114,8 @@ function MureedDetails() {
           { label: "Age", value: formatAge(data.dateOfBirth) },
           { label: "Gender", value: data.gender },
           { label: "Address", value: data.address, full: true },
-          { label: "Phone Number", value: formatPhone(data.phone) },
-          { label: "Email", value: data.email },
+          { label: "Phone Number", value: formatPhone(data.phone) || "Not Provided" },
+          { label: "Email", value: data.email || "Not Provided" },
           { label: "Peer Name", value: data.peerName },
           { label: "Mureed Status", value: <StatusBadge value={data.status} /> },
         ]}

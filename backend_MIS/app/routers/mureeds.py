@@ -146,9 +146,15 @@ from ..security import hash_password
 @router.post("", response_model=schemas.MureedOut)
 def create_mureed(input: schemas.MureedBase, _: models.UserAccount = Depends(require_admin), db: Session = Depends(get_db)):
     peer = db.scalar(select(models.Peer).where(models.Peer.name == input.peerName))
-    existing = db.scalar(select(models.Mureed).where(models.Mureed.email == input.email))
-    if existing:
-        raise conflict("Mureed with this email already exists.")
+    
+    clean_email = input.email.strip().lower() if input.email and input.email.strip() else None
+    clean_phone = input.phone.strip() if input.phone and input.phone.strip() else ""
+
+    if clean_email:
+        existing = db.scalar(select(models.Mureed).where(func.lower(models.Mureed.email) == clean_email))
+        if existing:
+            raise conflict("Mureed with this email already exists.")
+
     max_num = 0
     for mid in db.scalars(select(models.Mureed.id)).all():
         if mid and mid.startswith("MRD-"):
@@ -159,14 +165,15 @@ def create_mureed(input: schemas.MureedBase, _: models.UserAccount = Depends(req
             except ValueError:
                 pass
     mureed_id = f"MRD-{(max_num + 1):05d}"
+
     row = models.Mureed(
         id=mureed_id,
         name=input.name.strip(),
         date_of_birth=input.dateOfBirth,
         gender=input.gender,
         address=input.address.strip(),
-        phone=input.phone,
-        email=input.email,
+        phone=clean_phone,
+        email=clean_email,
         peer_id=peer.id if peer else None,
         peer_name=input.peerName,
         status=input.status,
@@ -175,30 +182,33 @@ def create_mureed(input: schemas.MureedBase, _: models.UserAccount = Depends(req
 
     settings = get_settings()
     default_pw = settings.default_mureed_password
-    user_id = f"usr-{mureed_id}"
+    msg = None
+    email_sent = None
 
-    if settings.use_supabase_auth:
-        client = SupabaseAuthClient(settings)
-        try:
-            client.ensure_supabase_user_synced(input.email, default_pw, {"name": input.name.strip(), "role": "Mureed", "mureed_id": mureed_id})
-            sp_user = client.get_user_by_email(input.email)
-            if sp_user and sp_user.get("id"):
-                user_id = sp_user["id"]
-        except Exception:
-            pass
+    if clean_email:
+        user_id = f"usr-{mureed_id}"
+        if settings.use_supabase_auth:
+            client = SupabaseAuthClient(settings)
+            try:
+                client.ensure_supabase_user_synced(clean_email, default_pw, {"name": input.name.strip(), "role": "Mureed", "mureed_id": mureed_id})
+                sp_user = client.get_user_by_email(clean_email)
+                if sp_user and sp_user.get("id"):
+                    user_id = sp_user["id"]
+            except Exception:
+                pass
 
-    user_acc = models.UserAccount(
-        id=user_id,
-        name=input.name.strip(),
-        email=input.email,
-        role="Mureed",
-        account_status="Active",
-        created_date=input.dateOfBirth[:10] if len(input.dateOfBirth) >= 10 else "2026-01-01",
-        mureed_id=mureed_id,
-        auth_methods="password",
-        password_hash=hash_password(default_pw) if not settings.use_supabase_auth else None,
-    )
-    db.add(user_acc)
+        user_acc = models.UserAccount(
+            id=user_id,
+            name=input.name.strip(),
+            email=clean_email,
+            role="Mureed",
+            account_status="Active",
+            created_date=input.dateOfBirth[:10] if len(input.dateOfBirth) >= 10 else "2026-01-01",
+            mureed_id=mureed_id,
+            auth_methods="password",
+            password_hash=hash_password(default_pw) if not settings.use_supabase_auth else None,
+        )
+        db.add(user_acc)
 
     try:
         db.commit()
@@ -207,10 +217,16 @@ def create_mureed(input: schemas.MureedBase, _: models.UserAccount = Depends(req
         raise conflict("Mureed with this email already exists.") from exc
     db.refresh(row)
 
-    # Send Brevo Welcome Email
-    email_service.send_mureed_welcome_email(row.email, row.name, initial_password=default_pw)
+    if clean_email:
+        email_sent = email_service.send_mureed_welcome_email(clean_email, row.name, initial_password=default_pw)
+        if email_sent:
+            msg = "Mureed account created successfully. Login credentials have been sent to the provided email."
+        else:
+            msg = "Mureed account created, but the login email could not be sent. Please retry sending the credentials."
+    else:
+        msg = "Mureed account created successfully. No email was provided, so login credentials were not sent."
 
-    return mureed_out(row)
+    return mureed_out(row, message=msg, email_sent=email_sent)
 
 
 @router.post("/{mureed_id}/resend-invitation", status_code=200)
@@ -218,13 +234,51 @@ def resend_mureed_invitation(mureed_id: str, _: models.UserAccount = Depends(req
     row = db.get(models.Mureed, mureed_id)
     if not row:
         raise HTTPException(status_code=404, detail="Mureed not found")
+    if not row.email or not row.email.strip():
+        raise HTTPException(status_code=400, detail="Cannot send invitation: Mureed does not have an email address.")
     
     settings = get_settings()
     default_pw = settings.default_mureed_password
-    sent = email_service.send_mureed_welcome_email(row.email, row.name, initial_password=default_pw)
+    clean_email = row.email.strip().lower()
+
+    # Ensure UserAccount exists for Mureed
+    user_acc = db.scalar(select(models.UserAccount).where(or_(models.UserAccount.mureed_id == mureed_id, func.lower(models.UserAccount.email) == clean_email)))
+    if not user_acc:
+        user_id = f"usr-{mureed_id}"
+        if settings.use_supabase_auth:
+            client = SupabaseAuthClient(settings)
+            try:
+                client.ensure_supabase_user_synced(clean_email, default_pw, {"name": row.name, "role": "Mureed", "mureed_id": mureed_id})
+                sp_user = client.get_user_by_email(clean_email)
+                if sp_user and sp_user.get("id"):
+                    user_id = sp_user["id"]
+            except Exception:
+                pass
+        user_acc = models.UserAccount(
+            id=user_id,
+            name=row.name,
+            email=clean_email,
+            role="Mureed",
+            account_status="Active",
+            created_date=row.date_of_birth[:10] if len(row.date_of_birth) >= 10 else "2026-01-01",
+            mureed_id=mureed_id,
+            auth_methods="password",
+            password_hash=hash_password(default_pw) if not settings.use_supabase_auth else None,
+        )
+        db.add(user_acc)
+        db.commit()
+
+    sent = email_service.send_mureed_welcome_email(clean_email, row.name, initial_password=default_pw)
     if not sent:
         raise HTTPException(status_code=500, detail="Could not send invitation email via Brevo.")
-    return {"message": f"Invitation email resent successfully to {row.email}."}
+    return {"message": f"Invitation email resent successfully to {clean_email}."}
+
+
+def _is_blank_email(val: str | None) -> bool:
+    if not val:
+        return True
+    s = val.strip().lower()
+    return s in ("", "null", "undefined", "none")
 
 
 @router.put("/{mureed_id}", response_model=schemas.MureedOut)
@@ -232,30 +286,103 @@ def update_mureed(mureed_id: str, input: schemas.MureedBase, _: models.UserAccou
     row = db.get(models.Mureed, mureed_id)
     if not row:
         raise HTTPException(status_code=404, detail="Mureed not found")
+    
+    prev_email = None if _is_blank_email(row.email) else row.email.strip().lower()
+    new_email = None if _is_blank_email(input.email) else input.email.strip().lower()
+    clean_phone = input.phone.strip() if input.phone and input.phone.strip() else ""
+
+    email_sent = None
+    msg = "Mureed details updated successfully."
+
     peer = db.scalar(select(models.Peer).where(models.Peer.name == input.peerName))
+
+    if new_email and new_email != prev_email:
+        duplicate = db.scalar(select(models.Mureed).where(func.lower(models.Mureed.email) == new_email, models.Mureed.id != mureed_id))
+        if duplicate:
+            raise conflict("Mureed with this email already exists.")
+
+    # Find existing UserAccount BEFORE changing fields
+    user = db.scalar(select(models.UserAccount).where(or_(models.UserAccount.mureed_id == mureed_id, (func.lower(models.UserAccount.email) == prev_email if prev_email else False))))
+    user_had_valid_email = (user is not None) and (not _is_blank_email(user.email))
+
     row.name = input.name.strip()
     row.date_of_birth = input.dateOfBirth
     row.gender = input.gender
     row.address = input.address.strip()
-    row.phone = input.phone
-    duplicate = db.scalar(select(models.Mureed).where(models.Mureed.email == input.email, models.Mureed.id != mureed_id))
-    if duplicate:
-        raise conflict("Mureed with this email already exists.")
-    row.email = input.email
+    row.phone = clean_phone
+    row.email = new_email
     row.peer_id = peer.id if peer else None
     row.peer_name = input.peerName
     row.status = input.status
-    user = db.scalar(select(models.UserAccount).where(models.UserAccount.mureed_id == row.id))
-    if user:
-        user.name = row.name
-        user.email = row.email
+
+    settings = get_settings()
+    default_pw = settings.default_mureed_password
+
+    # Detect transition: new email entered AND (previously had no email OR user account never had an email)
+    is_email_added_transition = (new_email is not None) and (prev_email is None or not user_had_valid_email)
+
+    if new_email:
+        if not user:
+            # Create Auth Account for Mureed
+            user_id = f"usr-{mureed_id}"
+            if settings.use_supabase_auth:
+                client = SupabaseAuthClient(settings)
+                try:
+                    client.ensure_supabase_user_synced(new_email, default_pw, {"name": row.name, "role": "Mureed", "mureed_id": mureed_id})
+                    sp_user = client.get_user_by_email(new_email)
+                    if sp_user and sp_user.get("id"):
+                        user_id = sp_user["id"]
+                except Exception:
+                    pass
+
+            user = models.UserAccount(
+                id=user_id,
+                name=row.name,
+                email=new_email,
+                role="Mureed",
+                account_status="Active",
+                created_date=input.dateOfBirth[:10] if len(input.dateOfBirth) >= 10 else "2026-01-01",
+                mureed_id=mureed_id,
+                auth_methods="password",
+                password_hash=hash_password(default_pw) if not settings.use_supabase_auth else None,
+            )
+            db.add(user)
+        else:
+            # Update existing UserAccount
+            user.name = row.name
+            user.email = new_email
+            if settings.use_supabase_auth:
+                try:
+                    client = SupabaseAuthClient(settings)
+                    client.ensure_supabase_user_synced(new_email, default_pw, {"name": row.name, "role": "Mureed", "mureed_id": mureed_id})
+                except Exception:
+                    pass
+    else:
+        # Email is NULL/empty
+        if user:
+            user.name = row.name
+            user.email = None
+
     try:
         db.commit()
     except IntegrityError as exc:
         db.rollback()
         raise conflict("Mureed with this email already exists.") from exc
     db.refresh(row)
-    return mureed_out(row)
+
+    # Determine email sending & notification messages based on transition rules
+    if is_email_added_transition:
+        email_sent = email_service.send_mureed_welcome_email(new_email, row.name, initial_password=default_pw)
+        if email_sent:
+            msg = "Mureed details updated successfully. Login credentials have been sent to the provided email."
+        else:
+            msg = "Mureed details updated, but the login email could not be sent. Please retry sending the credentials."
+    elif new_email is None:
+        msg = "Mureed details updated successfully. No email was provided, so login credentials were not sent."
+    else:
+        msg = "Mureed details updated successfully."
+
+    return mureed_out(row, message=msg, email_sent=email_sent)
 
 
 @router.delete("/{mureed_id}", status_code=204)
@@ -263,16 +390,17 @@ def delete_mureed(mureed_id: str, _: models.UserAccount = Depends(require_admin)
     row = db.get(models.Mureed, mureed_id)
     if row:
         settings = get_settings()
+        clean_email = row.email.strip().lower() if row.email and row.email.strip() else None
         users = db.scalars(
             select(models.UserAccount).where(
                 or_(
                     models.UserAccount.mureed_id == row.id,
-                    func.lower(models.UserAccount.email) == row.email.strip().lower()
+                    (func.lower(models.UserAccount.email) == clean_email if clean_email else False)
                 )
             )
         ).all()
         for user in users:
-            if settings.use_supabase_auth:
+            if settings.use_supabase_auth and user.email:
                 try:
                     client = SupabaseAuthClient(settings)
                     sp_user = client.get_user_by_email(user.email)

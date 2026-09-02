@@ -2,7 +2,7 @@ from . import models, schemas
 from .validation import calculate_age
 
 
-def mureed_out(row: models.Mureed) -> schemas.MureedOut:
+def mureed_out(row: models.Mureed, message: str | None = None, email_sent: bool | None = None) -> schemas.MureedOut:
     dob_str = str(row.date_of_birth)
     return schemas.MureedOut(
         id=row.id,
@@ -11,10 +11,12 @@ def mureed_out(row: models.Mureed) -> schemas.MureedOut:
         age=calculate_age(row.date_of_birth),
         gender=row.gender,
         address=row.address,
-        phone=row.phone,
+        phone=row.phone or "",
         email=row.email,
         peerName=row.peer_name,
         status=row.status,
+        message=message,
+        emailSent=email_sent,
     )
 
 

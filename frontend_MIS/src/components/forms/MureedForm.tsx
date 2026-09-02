@@ -70,9 +70,9 @@ export function MureedForm({
     if (!v.gender) next.gender = "Gender is required.";
     const addressError = validateRequired(v.address, "Address");
     if (addressError) next.address = addressError;
-    const phoneError = validatePhone(v.phone);
+    const phoneError = validatePhone(v.phone, true);
     if (phoneError) next.phone = phoneError;
-    const emailError = validateEmail(v.email);
+    const emailError = validateEmail(v.email, true);
     if (emailError) next.email = emailError;
     if (!v.peerName) next.peerName = "Peer Name is required.";
     return next;
@@ -193,7 +193,7 @@ export function MureedForm({
         </Field>
 
         {/* 6. Phone Number */}
-        <Field label="Phone Number" htmlFor="phone" error={errors.phone}>
+        <Field label="Phone Number (Optional)" htmlFor="phone" error={errors.phone}>
           <div className="flex">
             <span className="inline-flex select-none items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
               +91
@@ -217,10 +217,10 @@ export function MureedForm({
 
         {/* 7. Email */}
         <Field
-          label="Email"
+          label="Email (Optional)"
           htmlFor="email"
           error={errors.email}
-          hint="Becomes the Mureed's registered login email (e.g. example123@gmail.com)"
+          hint="Optional. If provided, login credentials will be sent to this email."
         >
           <Input
             id="email"

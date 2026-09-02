@@ -19,9 +19,9 @@ export function validateName(value: string): string | undefined {
   return undefined;
 }
 
-export function validateEmail(value: string): string | undefined {
+export function validateEmail(value: string, isOptional: boolean = false): string | undefined {
   const v = value.trim();
-  if (!v) return "Email is required.";
+  if (!v) return isOptional ? undefined : "Email is required.";
   if (!EMAIL_PATTERN.test(v)) return "Please enter a valid email address.";
   return undefined;
 }
@@ -33,9 +33,9 @@ export function normalizePhone(value: string): string {
   return digits.slice(0, PHONE_DIGITS);
 }
 
-export function validatePhone(value: string): string | undefined {
+export function validatePhone(value: string, isOptional: boolean = false): string | undefined {
   const digits = normalizePhone(value);
-  if (!digits) return "Phone Number is required.";
+  if (!digits) return isOptional ? undefined : "Phone Number is required.";
   if (digits.length !== PHONE_DIGITS) return "Please enter a valid 10-digit phone number.";
   if (!/^[6-9]/.test(digits)) return "Indian mobile numbers must start with 6, 7, 8 or 9.";
   return undefined;

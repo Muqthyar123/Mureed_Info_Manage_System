@@ -48,14 +48,14 @@ function EditMureedPage() {
   const save = async (value: MureedInput) => {
     setSubmitting(true);
     try {
-      await updateMureed(id, value);
+      const updated = await updateMureed(id, value);
       queryClient.invalidateQueries({ queryKey: ["mureeds"] });
       queryClient.invalidateQueries({ queryKey: ["mureed", id] });
       queryClient.invalidateQueries({ queryKey: ["overview"] });
-      toast.success("Mureed updated", { description: value.name });
+      toast.success(updated.message || "Mureed updated successfully.");
       navigate({ to: "/admin/mureeds/$id", params: { id } });
-    } catch {
-      toast.error("Could not update Mureed.");
+    } catch (err: any) {
+      toast.error(err.message || "Could not update Mureed.");
     } finally {
       setSubmitting(false);
       setPending(null);
@@ -76,6 +76,7 @@ function EditMureedPage() {
   }
 
   const { id: _omit, ...initialValue } = data;
+  initialValue.email = data.email || "";
 
   return (
     <>
@@ -87,7 +88,9 @@ function EditMureedPage() {
         submitLabel="Save Changes"
         submitting={submitting}
         onSubmit={(value) => {
-          if (value.email.toLowerCase() !== data.email.toLowerCase()) setPending(value);
+          const prevEmail = (data.email || "").toLowerCase();
+          const newEmail = (value.email || "").toLowerCase();
+          if (newEmail !== prevEmail && prevEmail !== "" && newEmail !== "") setPending(value);
           else save(value);
         }}
         onCancel={() => navigate({ to: "/admin/mureeds/$id", params: { id } })}

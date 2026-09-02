@@ -55,8 +55,13 @@ function AddMureedPage() {
       queryClient.invalidateQueries({ queryKey: ["overview"] });
       queryClient.invalidateQueries({ queryKey: ["users"] });
       playNotificationSound();
-      toast.success("Mureed created successfully", { description: `Invitation sent to ${mureed.email}` });
-      setCreated({ email: mureed.email });
+      const desc = mureed.message || (mureed.email ? `Invitation sent to ${mureed.email}` : "No email was provided, so login credentials were not sent.");
+      toast.success("Mureed created successfully", { description: desc });
+      if (mureed.email) {
+        setCreated({ email: mureed.email });
+      } else {
+        navigate({ to: "/admin/mureeds" });
+      }
     } catch (err: any) {
       toast.error(err.message || "Could not create Mureed.");
     } finally {

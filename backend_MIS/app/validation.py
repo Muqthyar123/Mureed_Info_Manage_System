@@ -38,6 +38,15 @@ def validate_email(value: str) -> str:
     return text
 
 
+def validate_email_optional(value: str | None) -> str | None:
+    if not value or not value.strip():
+        return None
+    text = normalize_email(value)
+    if not EMAIL_PATTERN.fullmatch(text):
+        raise ValueError("Please enter a valid email address.")
+    return text
+
+
 def normalize_phone(value: str) -> str:
     digits = re.sub(r"\D", "", value)
     if len(digits) > 10 and digits.startswith("91"):
@@ -49,6 +58,19 @@ def validate_phone(value: str) -> str:
     digits = normalize_phone(value)
     if not digits:
         raise ValueError("Phone Number is required.")
+    if len(digits) != 10:
+        raise ValueError("Please enter a valid 10-digit phone number.")
+    if not re.match(r"^[6-9]", digits):
+        raise ValueError("Indian mobile numbers must start with 6, 7, 8 or 9.")
+    return digits
+
+
+def validate_phone_optional(value: str | None) -> str:
+    if not value or not value.strip():
+        return ""
+    digits = normalize_phone(value)
+    if not digits:
+        return ""
     if len(digits) != 10:
         raise ValueError("Please enter a valid 10-digit phone number.")
     if not re.match(r"^[6-9]", digits):

@@ -6,10 +6,12 @@ from .validation import (
     VALID_MUREED_STATUSES,
     VALID_PEER_STATUSES,
     validate_email,
+    validate_email_optional,
     validate_iso_date,
     validate_name,
     validate_password,
     validate_phone,
+    validate_phone_optional,
 )
 
 
@@ -18,8 +20,8 @@ class MureedBase(BaseModel):
     dateOfBirth: str
     gender: str
     address: str
-    phone: str
-    email: str
+    phone: str | None = ""
+    email: str | None = None
     peerName: str
     status: str
 
@@ -50,13 +52,13 @@ class MureedBase(BaseModel):
 
     @field_validator("phone")
     @classmethod
-    def valid_phone(cls, value: str) -> str:
-        return validate_phone(value)
+    def valid_phone(cls, value: str | None) -> str:
+        return validate_phone_optional(value)
 
     @field_validator("email")
     @classmethod
-    def valid_email(cls, value: str) -> str:
-        return validate_email(value)
+    def valid_email(cls, value: str | None) -> str | None:
+        return validate_email_optional(value)
 
     @field_validator("peerName")
     @classmethod
@@ -74,6 +76,8 @@ class MureedBase(BaseModel):
 class MureedOut(MureedBase):
     id: str
     age: int
+    message: str | None = None
+    emailSent: bool | None = None
 
 
 class PaginatedMureeds(BaseModel):
