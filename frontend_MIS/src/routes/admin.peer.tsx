@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -55,6 +54,24 @@ export const Route = createFileRoute("/admin/peer")({
   component: PeerManagement,
 });
 
+function calculateKhilafat(dob?: string | null): string {
+  if (!dob || !dob.trim()) return "—";
+  try {
+    const birthDate = new Date(dob.trim());
+    if (isNaN(birthDate.getTime())) return "—";
+    const today = new Date();
+    if (birthDate > today) return "—";
+    let years = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      years--;
+    }
+    return years >= 0 ? `${years} years` : "—";
+  } catch {
+    return "—";
+  }
+}
+
 function PeerManagement() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -62,6 +79,7 @@ function PeerManagement() {
   const [editing, setEditing] = useState<PeerRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [formStatus, setFormStatus] = useState<"Active" | "Inactive">("Active");
   const [toDelete, setToDelete] = useState<PeerRow | null>(null);
   const [saving, setSaving] = useState(false);
@@ -86,6 +104,7 @@ function PeerManagement() {
       title: "Peer Records",
       columns: [
         { header: "Peer Name", value: (r) => r.name },
+        { header: "Khilafat", value: (r) => r.khilafat || calculateKhilafat(r.dateOfBirth) },
         { header: "Number of Mureeds", value: (r) => String(r.mureedCount) },
         { header: "Status", value: (r) => r.status },
       ],
@@ -94,12 +113,14 @@ function PeerManagement() {
 
   const openCreate = () => {
     setName("");
+    setDateOfBirth("");
     setFormStatus("Active");
     setCreating(true);
   };
 
   const openEdit = (row: PeerRow) => {
     setName(row.name);
+    setDateOfBirth(row.dateOfBirth || "");
     setFormStatus(row.status);
     setEditing(row);
   };
@@ -109,13 +130,24 @@ function PeerManagement() {
       toast.error("Peer Name is required.");
       return;
     }
+    if (dateOfBirth && dateOfBirth.trim()) {
+      const parsed = new Date(dateOfBirth.trim());
+      if (isNaN(parsed.getTime())) {
+        toast.error("Please enter a valid Date of Birth.");
+        return;
+      }
+      if (parsed > new Date()) {
+        toast.error("Date of birth cannot be in the future.");
+        return;
+      }
+    }
     setSaving(true);
     try {
       if (editing) {
-        await updatePeer(editing.id, name.trim(), formStatus);
+        await updatePeer(editing.id, name.trim(), formStatus, dateOfBirth.trim() || null);
         toast.success("Peer updated");
       } else {
-        await createPeer(name.trim(), formStatus);
+        await createPeer(name.trim(), formStatus, dateOfBirth.trim() || null);
         toast.success("Peer added");
       }
       setEditing(null);
@@ -177,6 +209,7 @@ function PeerManagement() {
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-3 py-3 font-medium">Peer Name</th>
+                <th className="px-3 py-3 font-medium">Khilafat</th>
                 <th className="px-3 py-3 font-medium">Number of Mureeds</th>
                 <th className="px-3 py-3 font-medium">Status</th>
                 <th className="px-3 py-3 text-right font-medium">Actions</th>
@@ -186,7 +219,7 @@ function PeerManagement() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-border/70">
-                    <td colSpan={4} className="px-3 py-3">
+                    <td colSpan={5} className="px-3 py-3">
                       <Skeleton className="h-5 w-full" />
                     </td>
                   </tr>
@@ -195,6 +228,7 @@ function PeerManagement() {
                 data.map((row) => (
                   <tr key={row.id} className="border-b border-border/70 hover:bg-muted/50">
                     <td className="px-3 py-3 font-medium">{row.name}</td>
+                    <td className="px-3 py-3 text-muted-foreground font-medium">{row.khilafat || calculateKhilafat(row.dateOfBirth)}</td>
                     <td className="px-3 py-3">{row.mureedCount.toLocaleString()}</td>
                     <td className="px-3 py-3">
                       <StatusBadge value={row.status} />
@@ -224,7 +258,7 @@ function PeerManagement() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-3 py-16 text-center">
+                  <td colSpan={5} className="px-3 py-16 text-center">
                     <Network className="mx-auto size-8 text-muted-foreground/60" />
                     <p className="mt-3 text-sm font-medium">No Peer found</p>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -262,6 +296,33 @@ function PeerManagement() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter Peer Name"
               />
+            </div>
+            <div>
+              <Label htmlFor="peer-dob" className="mb-2 block">
+                Date of Birth
+              </Label>
+              <Input
+                id="peer-dob"
+                type="date"
+                max={new Date().toISOString().slice(0, 10)}
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="peer-khilafat" className="mb-2 block">
+                Khilafat
+              </Label>
+              <Input
+                id="peer-khilafat"
+                value={calculateKhilafat(dateOfBirth)}
+                readOnly
+                disabled
+                className="bg-muted text-muted-foreground cursor-not-allowed font-medium"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Automatically calculated from Date of Birth.
+              </p>
             </div>
             <div>
               <Label className="mb-2 block">Status</Label>

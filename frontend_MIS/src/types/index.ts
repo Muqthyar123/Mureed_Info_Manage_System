@@ -21,6 +21,8 @@ export type MureedInput = Omit<Mureed, "id" | "message" | "emailSent">;
 export interface Peer {
   id: string;
   name: string;
+  dateOfBirth?: string | null;
+  khilafat?: string | null;
   status: "Active" | "Inactive";
 }
 

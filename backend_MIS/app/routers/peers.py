@@ -46,7 +46,12 @@ def create_peer(input: schemas.PeerIn, _: models.UserAccount = Depends(require_a
                     max_num = num
             except ValueError:
                 pass
-    row = models.Peer(id=f"mr-{max_num + 1}", name=input.name.strip(), status=input.status)
+    row = models.Peer(
+        id=f"mr-{max_num + 1}",
+        name=input.name.strip(),
+        date_of_birth=input.dateOfBirth,
+        status=input.status,
+    )
     db.add(row)
     try:
         db.commit()
@@ -54,7 +59,7 @@ def create_peer(input: schemas.PeerIn, _: models.UserAccount = Depends(require_a
         db.rollback()
         raise conflict("Peer with this name already exists.") from exc
     db.refresh(row)
-    return schemas.PeerOut(id=row.id, name=row.name, status=row.status)
+    return peer_out(row)
 
 
 @router.put("/{peer_id}", response_model=schemas.PeerOut)
@@ -67,6 +72,7 @@ def update_peer(peer_id: str, input: schemas.PeerIn, _: models.UserAccount = Dep
         raise conflict("Peer with this name already exists.")
     old_name = row.name
     row.name = input.name.strip()
+    row.date_of_birth = input.dateOfBirth
     row.status = input.status
     for mureed in db.scalars(select(models.Mureed).where(models.Mureed.peer_name == old_name)).all():
         mureed.peer_name = row.name
@@ -77,7 +83,7 @@ def update_peer(peer_id: str, input: schemas.PeerIn, _: models.UserAccount = Dep
         db.rollback()
         raise conflict("Peer with this name already exists.") from exc
     db.refresh(row)
-    return schemas.PeerOut(id=row.id, name=row.name, status=row.status)
+    return peer_out(row)
 
 
 @router.delete("/{peer_id}", status_code=204)

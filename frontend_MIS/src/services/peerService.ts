@@ -13,12 +13,12 @@ export async function listPeerNames(): Promise<string[]> {
   return apiRequest<string[]>("/peers/names");
 }
 
-export async function createPeer(name: string, status: Peer["status"]): Promise<Peer> {
-  return apiRequest<Peer>("/peers", { method: "POST", body: JSON.stringify({ name, status }) });
+export async function createPeer(name: string, status: Peer["status"], dateOfBirth?: string | null): Promise<Peer> {
+  return apiRequest<Peer>("/peers", { method: "POST", body: JSON.stringify({ name, status, dateOfBirth: dateOfBirth || null }) });
 }
 
-export async function updatePeer(id: string, name: string, status: Peer["status"]): Promise<Peer> {
-  return apiRequest<Peer>(`/peers/${id}`, { method: "PUT", body: JSON.stringify({ name, status }) });
+export async function updatePeer(id: string, name: string, status: Peer["status"], dateOfBirth?: string | null): Promise<Peer> {
+  return apiRequest<Peer>(`/peers/${id}`, { method: "PUT", body: JSON.stringify({ name, status, dateOfBirth: dateOfBirth || null }) });
 }
 
 export async function deletePeer(id: string): Promise<void> {

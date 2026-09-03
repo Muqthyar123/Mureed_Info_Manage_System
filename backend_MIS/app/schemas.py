@@ -89,12 +89,30 @@ class PaginatedMureeds(BaseModel):
 
 class PeerIn(BaseModel):
     name: str
+    dateOfBirth: str | None = None
     status: str = "Active"
 
     @field_validator("name")
     @classmethod
     def valid_name(cls, value: str) -> str:
         return validate_name(value, "Peer Name")
+
+    @field_validator("dateOfBirth")
+    @classmethod
+    def valid_dob(cls, value: str | None) -> str | None:
+        if not value or not value.strip():
+            return None
+        text = value.strip()
+        try:
+            from datetime import date
+            parsed = date.fromisoformat(text[:10])
+            if parsed > date.today():
+                raise ValueError("Date of birth cannot be in the future.")
+            return parsed.isoformat()
+        except ValueError as e:
+            if "future" in str(e):
+                raise e
+            raise ValueError("Please enter a valid date of birth (YYYY-MM-DD).")
 
     @field_validator("status")
     @classmethod
@@ -106,6 +124,7 @@ class PeerIn(BaseModel):
 
 class PeerOut(PeerIn):
     id: str
+    khilafat: str | None = None
 
 
 class PeerRow(PeerOut):
