@@ -144,7 +144,7 @@ function UserManagement() {
                   return (
                     <tr key={u.id} className="border-b border-border/70 hover:bg-muted/50">
                       <td className="px-3 py-3 font-medium">{u.name}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{u.email}</td>
+                      <td className="px-3 py-3 text-muted-foreground">{u.email || <span className="text-muted-foreground/50">—</span>}</td>
                       <td className="px-3 py-3">
                         <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
                           {u.adminRole === "MAIN_ADMIN"

@@ -30,6 +30,13 @@ def mask_email(email: str) -> str:
     return f"{masked}@{domain}"
 
 
+def _is_valid_email(val: str | None) -> bool:
+    if not val:
+        return False
+    s = val.strip().lower()
+    return bool(s and s not in ("", "null", "undefined", "none") and "@" in s)
+
+
 @router.get("", response_model=list[schemas.AppUserOut])
 def list_users(
     search: str | None = None,
@@ -38,27 +45,80 @@ def list_users(
     current_user: models.UserAccount = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    stmt = select(models.UserAccount)
-    if search:
-        term = f"%{search.strip().lower()}%"
-        stmt = stmt.where(or_(func.lower(models.UserAccount.name).like(term), func.lower(models.UserAccount.email).like(term)))
-    if role and role != "all":
-        stmt = stmt.where(models.UserAccount.role == role)
-    if status and status != "all":
-        stmt = stmt.where(models.UserAccount.account_status == status)
+    # Fetch UserAccount rows that have a valid non-empty email
+    users = db.scalars(select(models.UserAccount).order_by(models.UserAccount.created_date.desc())).all()
+    valid_users = [u for u in users if _is_valid_email(u.email)]
+    user_mureed_ids = {u.mureed_id for u in valid_users if u.mureed_id}
+    user_emails = {u.email.strip().lower() for u in valid_users if u.email and u.email.strip()}
 
-    users = db.scalars(stmt.order_by(models.UserAccount.created_date.desc())).all()
+    # Fetch Mureeds with valid emails to synthesize missing user accounts
+    mureeds = db.scalars(select(models.Mureed)).all()
+    synthesized_users = []
+    for m in mureeds:
+        if _is_valid_email(m.email):
+            m_email = m.email.strip().lower()
+            dob_str = str(m.date_of_birth) if m.date_of_birth else "2026-01-01"
+            if m.id not in user_mureed_ids and m_email not in user_emails:
+                synthesized_users.append(
+                    models.UserAccount(
+                        id=f"usr-{m.id}",
+                        name=m.name,
+                        email=m.email.strip(),
+                        role="Mureed",
+                        account_status="Active",
+                        created_date=dob_str[:10],
+                        mureed_id=m.id,
+                    )
+                )
+
+    all_users = valid_users + synthesized_users
+    is_sub_admin = current_user.admin_role == "SUB_ADMIN" or current_user.role == "SUB_ADMIN"
+
     result = []
-    is_sub_admin = current_user.admin_role == "SUB_ADMIN"
+    search_term = search.strip().lower() if search and search.strip() else None
 
-    for row in users:
+    for row in all_users:
+        row_email = row.email.strip().lower() if row.email and row.email.strip() else ""
+        row_name = row.name.strip().lower() if row.name else ""
+
+        # Enforce Rule: Only show users with a valid non-empty email
+        if not _is_valid_email(row_email):
+            continue
+
+        # Search filter
+        if search_term:
+            if search_term not in row_name and search_term not in row_email:
+                continue
+
+        # Role filter
+        if role and role != "all":
+            if role in ("Admin", "MAIN_ADMIN", "SUPER_ADMIN"):
+                # Super Admin filter
+                if row.role not in ("Admin", "SUPER_ADMIN", "MAIN_ADMIN") or row.admin_role == "SUB_ADMIN":
+                    continue
+            elif role in ("SUB_ADMIN", "Sub Admin"):
+                # Sub Admin filter
+                if row.role != "SUB_ADMIN" and row.admin_role != "SUB_ADMIN":
+                    continue
+            elif role == "Mureed":
+                if row.role != "Mureed":
+                    continue
+            elif row.role != role and row.admin_role != role:
+                continue
+
+        # Status filter
+        if status and status != "all":
+            if row.account_status != status:
+                continue
+
         u_out = user_out(row)
-        if is_sub_admin:
+        if is_sub_admin and row.email and current_user.email:
             is_self = row.email.strip().lower() == current_user.email.strip().lower()
             is_mureed = row.role == "Mureed"
             if not is_self and not is_mureed:
                 u_out.email = mask_email(u_out.email)
         result.append(u_out)
+
     return result
 
 

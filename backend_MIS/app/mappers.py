@@ -28,7 +28,7 @@ def user_out(row: models.UserAccount) -> schemas.AppUserOut:
     return schemas.AppUserOut(
         id=row.id,
         name=row.name,
-        email=row.email,
+        email=row.email or "",
         role=row.role,
         accountStatus=row.account_status,
         createdDate=row.created_date,
@@ -40,7 +40,7 @@ def auth_user(row: models.UserAccount) -> schemas.AuthUser:
     return schemas.AuthUser(
         id=row.id,
         name=row.name,
-        email=row.email,
+        email=row.email or "",
         role="Admin" if row.role in ("Admin", "SUB_ADMIN", "SUPER_ADMIN") else row.role,
         adminRole=row.admin_role or ("SUB_ADMIN" if row.role == "SUB_ADMIN" else "MAIN_ADMIN"),
         mureedId=row.mureed_id,

@@ -115,7 +115,7 @@ class PeerRow(PeerOut):
 class AppUserOut(BaseModel):
     id: str
     name: str
-    email: str
+    email: str | None = ""
     role: str
     accountStatus: str
     createdDate: str
@@ -125,7 +125,7 @@ class AppUserOut(BaseModel):
 class AuthUser(BaseModel):
     id: str
     name: str
-    email: str
+    email: str | None = ""
     role: str
     adminRole: str | None = None
     mureedId: str | None = None
