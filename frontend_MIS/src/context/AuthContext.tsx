@@ -9,6 +9,7 @@ import {
 } from "react";
 import {
   getMe,
+  isSessionExpired,
   loginAdmin,
   loginSubAdmin,
   loginAdminWithGoogle,
@@ -44,29 +45,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [ready, setReady] = useState(false);
 
+  const signOut = useCallback(() => {
+    persistToken(null);
+    persistUser(null);
+    setUser(null);
+  }, []);
+
   useEffect(() => {
     async function initAuth() {
+      if (isSessionExpired()) {
+        signOut();
+        setReady(true);
+        return;
+      }
+
       if (apiEnabled) {
         const token = readToken();
-        if (token) {
+        const cachedUser = readPersistedUser();
+        if (token && cachedUser) {
+          setUser(cachedUser);
           try {
             const currentUser = await getMe();
             if (currentUser) {
-              persistUser(currentUser);
+              setUser(currentUser);
+            }
+          } catch (err: any) {
+            if (err?.status === 401 || err?.status === 403) {
+              signOut();
+            }
+          }
+        } else if (token) {
+          try {
+            const currentUser = await getMe();
+            if (currentUser) {
               setUser(currentUser);
             } else {
-              persistToken(null);
-              persistUser(null);
-              setUser(null);
+              signOut();
             }
-          } catch {
-            persistToken(null);
-            persistUser(null);
-            setUser(null);
+          } catch (err: any) {
+            if (err?.status === 401 || err?.status === 403) {
+              signOut();
+            }
           }
         } else {
-          persistUser(null);
-          setUser(null);
+          signOut();
         }
       } else {
         setUser(readPersistedUser());
@@ -74,7 +96,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setReady(true);
     }
     initAuth();
-  }, []);
+  }, [signOut]);
+
+  // Active interval check every 1 minute to auto-logout when 24 hours expire
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (readToken() && isSessionExpired()) {
+        signOut();
+      }
+    }, 60 * 1000);
+
+    return () => clearInterval(timer);
+  }, [signOut]);
 
 
   const signInAdmin = useCallback(async (email: string, password: string) => {
@@ -117,12 +150,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persistUser(next);
     setUser(next);
     return next;
-  }, []);
-
-  const signOut = useCallback(() => {
-    persistToken(null);
-    persistUser(null);
-    setUser(null);
   }, []);
 
   const value = useMemo(

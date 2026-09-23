@@ -7,6 +7,21 @@ import { apiRequest, persistToken } from "@/services/apiClient";
 
 export const MAIN_ADMIN_EMAIL = "aasthanakhadariyaaskariya.admin@gmail.com";
 const STORAGE_KEY = "mims.auth.user";
+const TIMESTAMP_KEY = "mims.auth.timestamp";
+const SESSION_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 Hours in milliseconds
+
+export function isSessionExpired(): boolean {
+  if (typeof window === "undefined") return true;
+  const loginTime = window.localStorage.getItem(TIMESTAMP_KEY);
+  if (!loginTime) return true;
+  const elapsed = Date.now() - parseInt(loginTime, 10);
+  return elapsed >= SESSION_EXPIRY_MS;
+}
+
+export function resetLoginTimestamp() {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(TIMESTAMP_KEY, Date.now().toString());
+}
 
 interface AuthResponse {
   user: AuthUser;
@@ -18,6 +33,7 @@ export async function loginAdmin(email: string, password: string): Promise<AuthU
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+  resetLoginTimestamp();
   persistToken(result.accessToken);
   persistUser(result.user);
   return result.user;
@@ -28,6 +44,7 @@ export async function loginSubAdmin(email: string, password: string): Promise<Au
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+  resetLoginTimestamp();
   persistToken(result.accessToken);
   persistUser(result.user);
   return result.user;
@@ -49,6 +66,7 @@ export async function loginMureed(email: string, password: string): Promise<Auth
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+  resetLoginTimestamp();
   persistToken(result.accessToken);
   persistUser(result.user);
   return result.user;
@@ -104,6 +122,7 @@ export async function verifyAdminSignupOtp(
     body: JSON.stringify({ signup, otp }),
   });
   if (result.status === "ACTIVE") {
+    resetLoginTimestamp();
     persistToken(result.accessToken);
     persistUser(result.user);
   }
@@ -124,6 +143,7 @@ export async function loginAdminWithGoogle(email: string): Promise<AuthUser> {
     method: "POST",
     body: JSON.stringify({ email }),
   });
+  resetLoginTimestamp();
   persistToken(result.accessToken);
   persistUser(result.user);
   return result.user;
@@ -147,15 +167,24 @@ export async function deleteAdminRequest(requestId: string): Promise<void> {
 
 export function persistUser(user: AuthUser | null) {
   if (typeof window === "undefined") return;
-  if (user) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-  else {
+  if (user) {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+    if (!window.localStorage.getItem(TIMESTAMP_KEY)) {
+      window.localStorage.setItem(TIMESTAMP_KEY, Date.now().toString());
+    }
+  } else {
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(TIMESTAMP_KEY);
     persistToken(null);
   }
 }
 
 export function readPersistedUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
+  if (isSessionExpired()) {
+    persistUser(null);
+    return null;
+  }
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as AuthUser) : null;
@@ -165,17 +194,23 @@ export function readPersistedUser(): AuthUser | null {
 }
 
 export async function getMe(): Promise<AuthUser | null> {
+  if (isSessionExpired()) {
+    persistUser(null);
+    return null;
+  }
   try {
     const user = await apiRequest<AuthUser>("/auth/me");
     if (user) {
       persistUser(user);
       return user;
     }
-    persistUser(null);
-    return null;
-  } catch {
-    persistUser(null);
-    return null;
+    return readPersistedUser();
+  } catch (err: any) {
+    if (err?.status === 401 || err?.status === 403) {
+      persistUser(null);
+      return null;
+    }
+    return readPersistedUser();
   }
 }
 

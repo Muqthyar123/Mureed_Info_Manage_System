@@ -30,7 +30,9 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
     } catch {
       // Keep default message.
     }
-    throw new Error(message);
+    const err = new Error(message) as Error & { status?: number };
+    err.status = response.status;
+    throw err;
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
