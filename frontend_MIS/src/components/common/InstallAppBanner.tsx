@@ -73,30 +73,32 @@ export function InstallAppBanner() {
 
   return (
     <>
-      {/* Install App Popup Banner */}
-      <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md animate-in fade-in slide-in-from-bottom-5 duration-300">
-        <div className="surface-card relative flex items-center justify-between gap-3 rounded-xl border border-primary/20 p-4 shadow-xl backdrop-blur-md bg-card/95">
+      {/* 1. TOP FLOATING NOTIFICATION POPUP CARD (Matching Screenshot) */}
+      <div className="fixed top-3 left-3 right-3 z-[9999] mx-auto max-w-md animate-in fade-in slide-in-from-top-5 duration-300">
+        <div className="surface-card relative flex items-center justify-between gap-3 rounded-2xl border border-primary/30 p-3.5 shadow-2xl backdrop-blur-md bg-card/98 ring-1 ring-black/10 dark:ring-white/10">
           <button
             onClick={handleDismiss}
-            className="absolute right-2 top-2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="Close"
+            className="absolute -right-1 -top-1 rounded-full bg-muted p-1 text-muted-foreground shadow-sm hover:bg-destructive hover:text-destructive-foreground transition-colors"
+            aria-label="Close Top Banner"
           >
-            <X className="size-4" />
+            <X className="size-3.5" />
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 pr-1">
             <img
               src="/apple-touch-icon.png"
               alt="Gulaaman e Askari Logo"
-              className="size-12 rounded-xl border border-border/50 object-cover shadow-sm"
+              className="size-10 shrink-0 rounded-xl border border-border/50 object-cover shadow-sm"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = "/favicon.png";
               }}
             />
-            <div className="pr-2">
-              <h4 className="text-sm font-bold text-foreground">Gulaaman e Askari</h4>
-              <p className="text-xs text-muted-foreground">
-                Install app on your phone for quick 1-tap access
+            <div className="min-w-0">
+              <h4 className="text-sm font-bold text-foreground truncate">
+                Gulaaman e Askari
+              </h4>
+              <p className="text-xs text-muted-foreground truncate">
+                Install app for fast 1-tap access
               </p>
             </div>
           </div>
@@ -104,9 +106,50 @@ export function InstallAppBanner() {
           <Button
             size="sm"
             onClick={handleInstallClick}
-            className="shrink-0 font-medium shadow-md gap-1.5"
+            className="shrink-0 font-semibold shadow-md gap-1.5 px-3.5 h-9 text-xs rounded-xl"
           >
-            <Download className="size-4" />
+            <Download className="size-3.5" />
+            Install
+          </Button>
+        </div>
+      </div>
+
+      {/* 2. BOTTOM FLOATING INSTALL DOCK (Maintained at Bottom as requested) */}
+      <div className="fixed bottom-3 left-3 right-3 z-[9998] mx-auto max-w-md animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div className="surface-card relative flex items-center justify-between gap-3 rounded-2xl border border-primary/30 p-3.5 shadow-2xl backdrop-blur-md bg-card/98 ring-1 ring-black/10 dark:ring-white/10">
+          <button
+            onClick={handleDismiss}
+            className="absolute -right-1 -top-1 rounded-full bg-muted p-1 text-muted-foreground shadow-sm hover:bg-destructive hover:text-destructive-foreground transition-colors"
+            aria-label="Close Bottom Banner"
+          >
+            <X className="size-3.5" />
+          </button>
+
+          <div className="flex items-center gap-3 min-w-0 pr-1">
+            <img
+              src="/apple-touch-icon.png"
+              alt="Gulaaman e Askari Logo"
+              className="size-10 shrink-0 rounded-xl border border-border/50 object-cover shadow-sm"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/favicon.png";
+              }}
+            />
+            <div className="min-w-0">
+              <h4 className="text-sm font-bold text-foreground truncate">
+                Gulaaman e Askari App
+              </h4>
+              <p className="text-xs text-muted-foreground truncate">
+                Add to home screen
+              </p>
+            </div>
+          </div>
+
+          <Button
+            size="sm"
+            onClick={handleInstallClick}
+            className="shrink-0 font-semibold shadow-md gap-1.5 px-3.5 h-9 text-xs rounded-xl"
+          >
+            <Download className="size-3.5" />
             Install App
           </Button>
         </div>
@@ -114,7 +157,7 @@ export function InstallAppBanner() {
 
       {/* iOS Instructions Modal */}
       {showIOSGuide && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
           <div className="surface-card max-w-sm rounded-xl p-5 shadow-2xl text-center space-y-4 border border-border">
             <img
               src="/apple-touch-icon.png"
