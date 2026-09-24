@@ -103,21 +103,29 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
 
       {/* Bottom Footer with Account Details just above Logout Button */}
       <div className={cn("mt-auto border-t border-sidebar-border/60 pt-3 flex flex-col gap-2", collapsed ? "px-2" : "px-3")}>
-        {/* User Account Details */}
-        <div className={cn("flex items-center gap-3 px-1 py-1", collapsed && "justify-center px-0")}>
+        {/* User Account Details (Clickable -> Redirects to Settings page) */}
+        <Link
+          to="/admin/settings"
+          title={collapsed ? `${user?.name} — Settings` : "Click to view profile & settings"}
+          className={cn(
+            "flex items-center gap-3 rounded-xl p-1.5 transition-all duration-200 hover:bg-sidebar-accent/70 group cursor-pointer",
+            collapsed && "justify-center p-1"
+          )}
+        >
           <div
-            title={`${user?.name} (${user?.email})`}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-sm shadow-sm ring-2 ring-primary/30"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-sm shadow-sm ring-2 ring-primary/30 group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
           >
             {userInitial}
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-sidebar-accent-foreground">{user?.name}</p>
+              <p className="truncate text-xs font-semibold text-sidebar-accent-foreground group-hover:text-primary transition-colors">
+                {user?.name}
+              </p>
               <p className="truncate text-[11px] text-sidebar-foreground/60">{user?.email}</p>
             </div>
           )}
-        </div>
+        </Link>
 
         {/* Logout Button */}
         <button
