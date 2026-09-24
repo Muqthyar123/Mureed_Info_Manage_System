@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, LogOut, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Menu, LogOut, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -73,53 +73,53 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
 
   const sidebarInner = (
     <div className="flex h-full flex-col bg-sidebar py-4 select-none">
-      {/* Top Header & Toggle */}
-      <div className={cn("flex items-center pb-4 border-b border-sidebar-border/60", collapsed ? "flex-col gap-3 px-2" : "justify-between px-4")}>
-        <div className="flex items-center gap-3 min-w-0">
+      {/* Top Header with Clickable Logo (Click logo to toggle sidebar, no chevron button) */}
+      <div className={cn("flex items-center pb-4 border-b border-sidebar-border/60 px-4", collapsed && "justify-center px-2")}>
+        <div
+          onClick={toggleCollapsed}
+          title={collapsed ? "Click logo to expand sidebar" : "Click logo to collapse sidebar"}
+          className="flex items-center gap-3 min-w-0 cursor-pointer group hover:opacity-90 transition-opacity"
+        >
           <img
             src="/logo.png"
             alt="MIMS Logo"
-            className="h-9 w-9 shrink-0 rounded-lg bg-white p-0.5 shadow-sm object-contain"
+            className="h-10 w-10 shrink-0 rounded-xl bg-white p-0.5 shadow-md object-contain transition-transform group-hover:scale-105 group-active:scale-95"
           />
           {!collapsed && (
             <div className="min-w-0">
-              <p className="font-display text-base font-bold text-sidebar-accent-foreground tracking-tight leading-none">MIMS</p>
+              <p className="font-display text-base font-bold text-sidebar-accent-foreground tracking-tight leading-none group-hover:text-primary transition-colors">
+                MIMS
+              </p>
               <p className="mt-1 text-xs text-sidebar-foreground/60 truncate">{scopeLabel}</p>
             </div>
           )}
         </div>
-
-        {/* Sidebar Collapse Toggle Button */}
-        <button
-          onClick={toggleCollapsed}
-          title={collapsed ? "Expand sidebar" : "Collapse to icon rail"}
-          className="hidden lg:flex items-center justify-center size-8 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground transition-colors"
-        >
-          {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-        </button>
-      </div>
-
-      {/* User Initial Circle Badge (Matching Reference Screenshot Avatar) */}
-      <div className={cn("my-3 flex items-center gap-3 px-3", collapsed && "justify-center px-0")}>
-        <div
-          title={user?.name || "User Profile"}
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-sm shadow-sm ring-2 ring-primary/30"
-        >
-          {userInitial}
-        </div>
-        {!collapsed && (
-          <div className="min-w-0">
-            <p className="truncate text-xs font-semibold text-sidebar-accent-foreground">{user?.name}</p>
-            <p className="truncate text-[11px] text-sidebar-foreground/60">{user?.email}</p>
-          </div>
-        )}
       </div>
 
       {/* Navigation Links */}
-      {nav}
+      <div className="mt-3 flex-1 overflow-y-auto">
+        {nav}
+      </div>
 
-      {/* Bottom Footer & Logout */}
-      <div className={cn("mt-auto border-t border-sidebar-border/60 pt-3", collapsed ? "px-2" : "px-3")}>
+      {/* Bottom Footer with Account Details just above Logout Button */}
+      <div className={cn("mt-auto border-t border-sidebar-border/60 pt-3 flex flex-col gap-2", collapsed ? "px-2" : "px-3")}>
+        {/* User Account Details */}
+        <div className={cn("flex items-center gap-3 px-1 py-1", collapsed && "justify-center px-0")}>
+          <div
+            title={`${user?.name} (${user?.email})`}
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-sm shadow-sm ring-2 ring-primary/30"
+          >
+            {userInitial}
+          </div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="truncate text-xs font-semibold text-sidebar-accent-foreground">{user?.name}</p>
+              <p className="truncate text-[11px] text-sidebar-foreground/60">{user?.email}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Logout Button */}
         <button
           onClick={handleSignOut}
           title={collapsed ? "Logout" : undefined}
