@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, LogOut, X } from "lucide-react";
+import { Menu, LogOut, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -22,34 +22,49 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("mims.sidebar.collapsed") === "true";
+  });
+
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem("mims.sidebar.collapsed", String(next));
+  };
+
   const handleSignOut = () => {
     signOut();
     navigate({ to: "/", replace: true });
   };
 
+  const userInitial = user?.name ? user.name.trim().charAt(0).toUpperCase() : "A";
+
   const nav = (
-    <nav className="flex flex-1 flex-col gap-1 px-3">
+    <nav className={cn("flex flex-1 flex-col gap-1.5", collapsed ? "px-2 items-center" : "px-3")}>
       {items.map((item) => {
         const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
         return (
           <Link
             key={item.to}
             to={item.to}
+            title={collapsed ? item.label : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+              "flex items-center gap-3 rounded-xl transition-all duration-200",
+              collapsed ? "h-10 w-10 justify-center p-0" : "px-3.5 py-2.5 text-sm font-medium",
               active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+                ? "bg-primary text-primary-foreground shadow-md font-semibold"
+                : "text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"
             )}
           >
-            <item.icon className="size-4 shrink-0" />
-            {item.label}
+            <item.icon className={cn("shrink-0", collapsed ? "size-5" : "size-4")} />
+            {!collapsed && <span className="truncate">{item.label}</span>}
           </Link>
         );
       })}
@@ -57,26 +72,64 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
   );
 
   const sidebarInner = (
-    <div className="flex h-full flex-col bg-sidebar py-5">
-      <div className="flex items-center gap-3 px-5 pb-6">
-        <img src="/logo.png" alt="MIMS Logo" className="h-10 w-10 shrink-0 rounded-md bg-white p-0.5 shadow-sm object-contain" />
-        <div>
-          <p className="font-display text-base font-semibold text-sidebar-accent-foreground">MIMS</p>
-          <p className="mt-0.5 text-xs text-sidebar-foreground/60">{scopeLabel}</p>
+    <div className="flex h-full flex-col bg-sidebar py-4 select-none">
+      {/* Top Header & Toggle */}
+      <div className={cn("flex items-center pb-4 border-b border-sidebar-border/60", collapsed ? "flex-col gap-3 px-2" : "justify-between px-4")}>
+        <div className="flex items-center gap-3 min-w-0">
+          <img
+            src="/logo.png"
+            alt="MIMS Logo"
+            className="h-9 w-9 shrink-0 rounded-lg bg-white p-0.5 shadow-sm object-contain"
+          />
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="font-display text-base font-bold text-sidebar-accent-foreground tracking-tight leading-none">MIMS</p>
+              <p className="mt-1 text-xs text-sidebar-foreground/60 truncate">{scopeLabel}</p>
+            </div>
+          )}
         </div>
+
+        {/* Sidebar Collapse Toggle Button */}
+        <button
+          onClick={toggleCollapsed}
+          title={collapsed ? "Expand sidebar" : "Collapse to icon rail"}
+          className="hidden lg:flex items-center justify-center size-8 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground transition-colors"
+        >
+          {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+        </button>
       </div>
-      {nav}
-      <div className="mt-4 border-t border-sidebar-border px-3 pt-4">
-        <div className="px-3 pb-3">
-          <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{user?.name}</p>
-          <p className="truncate text-xs text-sidebar-foreground/60">{user?.email}</p>
+
+      {/* User Initial Circle Badge (Matching Reference Screenshot Avatar) */}
+      <div className={cn("my-3 flex items-center gap-3 px-3", collapsed && "justify-center px-0")}>
+        <div
+          title={user?.name || "User Profile"}
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-sm shadow-sm ring-2 ring-primary/30"
+        >
+          {userInitial}
         </div>
+        {!collapsed && (
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold text-sidebar-accent-foreground">{user?.name}</p>
+            <p className="truncate text-[11px] text-sidebar-foreground/60">{user?.email}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation Links */}
+      {nav}
+
+      {/* Bottom Footer & Logout */}
+      <div className={cn("mt-auto border-t border-sidebar-border/60 pt-3", collapsed ? "px-2" : "px-3")}>
         <button
           onClick={handleSignOut}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+          title={collapsed ? "Logout" : undefined}
+          className={cn(
+            "flex items-center gap-3 rounded-xl transition-all duration-200 text-destructive/90 hover:bg-destructive/10 hover:text-destructive",
+            collapsed ? "h-10 w-10 justify-center mx-auto" : "w-full px-3.5 py-2.5 text-sm font-medium"
+          )}
         >
-          <LogOut className="size-4" />
-          Logout
+          <LogOut className={cn("shrink-0", collapsed ? "size-5" : "size-4")} />
+          {!collapsed && <span>Logout</span>}
         </button>
       </div>
     </div>
@@ -84,14 +137,21 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-sidebar-border lg:block">
+      {/* Desktop Sidebar Rail */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 hidden border-r border-sidebar-border bg-sidebar transition-all duration-300 lg:block",
+          collapsed ? "w-16" : "w-64"
+        )}
+      >
         {sidebarInner}
       </aside>
 
+      {/* Mobile Drawer (Always full width when opened on mobile) */}
       {open && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
-            className="absolute inset-0 bg-foreground/40"
+            className="absolute inset-0 bg-foreground/40 backdrop-blur-xs"
             onClick={() => setOpen(false)}
             aria-hidden
           />
@@ -108,13 +168,19 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
         </div>
       )}
 
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur lg:hidden">
-          <Button variant="ghost" size="icon" aria-label="Open menu" onClick={() => setOpen(true)}>
-            <Menu className="size-5" />
-          </Button>
-          <img src="/logo.png" alt="MIMS Logo" className="h-7 w-7 shrink-0 rounded-md object-contain" />
-          <span className="font-display text-sm font-semibold">MIMS</span>
+      {/* Main Content View with Dynamic Left Padding */}
+      <div className={cn("transition-all duration-300", collapsed ? "lg:pl-16" : "lg:pl-64")}>
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/85 px-4 py-3 backdrop-blur lg:hidden">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" aria-label="Open menu" onClick={() => setOpen(true)}>
+              <Menu className="size-5" />
+            </Button>
+            <img src="/logo.png" alt="MIMS Logo" className="h-7 w-7 shrink-0 rounded-md object-contain" />
+            <span className="font-display text-sm font-semibold">MIMS</span>
+          </div>
+          <div className="flex size-7 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-xs">
+            {userInitial}
+          </div>
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">{children}</main>
       </div>
