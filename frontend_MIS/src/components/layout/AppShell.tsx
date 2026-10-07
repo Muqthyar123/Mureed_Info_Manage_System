@@ -1,7 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, LogOut, X } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -21,16 +20,19 @@ interface AppShellProps {
 export function AppShell({ items, children, scopeLabel }: AppShellProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("mims.sidebar.collapsed") === "true";
+    if (typeof window === "undefined") return true;
+    const saved = localStorage.getItem("mims.sidebar.collapsed");
+    if (saved !== null) return saved === "true";
+    return window.innerWidth < 1024;
   });
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
-    setOpen(false);
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setCollapsed(true);
+    }
   }, [pathname]);
 
   const toggleCollapsed = () => {
@@ -47,7 +49,7 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
   const userInitial = user?.name ? user.name.trim().charAt(0).toUpperCase() : "A";
 
   const nav = (
-    <nav className={cn("flex flex-1 flex-col gap-1.5", collapsed ? "px-2 items-center" : "px-3")}>
+    <nav className={cn("flex flex-1 flex-col gap-1.5", collapsed ? "px-1.5 sm:px-2 items-center" : "px-3")}>
       {items.map((item) => {
         const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
         return (
@@ -57,7 +59,7 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
             title={collapsed ? item.label : undefined}
             className={cn(
               "flex items-center gap-3 rounded-xl transition-all duration-200",
-              collapsed ? "h-10 w-10 justify-center p-0" : "px-3.5 py-2.5 text-sm font-medium",
+              collapsed ? "h-9 w-9 sm:h-10 sm:w-10 justify-center p-0" : "px-3.5 py-2.5 text-sm font-medium",
               active
                 ? "bg-primary text-primary-foreground shadow-md font-semibold"
                 : "text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"
@@ -72,9 +74,9 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
   );
 
   const sidebarInner = (
-    <div className="flex h-full flex-col bg-sidebar py-4 select-none">
-      {/* Top Header with Clickable Logo (Click logo to toggle sidebar, no chevron button) */}
-      <div className={cn("flex items-center pb-4 border-b border-sidebar-border/60 px-4", collapsed && "justify-center px-2")}>
+    <div className="flex h-full flex-col bg-sidebar py-3 sm:py-4 select-none">
+      {/* Top Header with Clickable Logo */}
+      <div className={cn("flex items-center pb-3 sm:pb-4 border-b border-sidebar-border/60 px-3 sm:px-4", collapsed && "justify-center px-1 sm:px-2")}>
         <div
           onClick={toggleCollapsed}
           title={collapsed ? "Click logo to expand sidebar" : "Click logo to collapse sidebar"}
@@ -83,7 +85,7 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
           <img
             src="/logo.png"
             alt="MIMS Logo"
-            className="h-10 w-10 shrink-0 rounded-xl bg-white p-0.5 shadow-md object-contain transition-transform group-hover:scale-105 group-active:scale-95"
+            className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-xl bg-white p-0.5 shadow-md object-contain transition-transform group-hover:scale-105 group-active:scale-95"
           />
           {!collapsed && (
             <div className="min-w-0">
@@ -102,18 +104,18 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
       </div>
 
       {/* Bottom Footer with Account Details just above Logout Button */}
-      <div className={cn("mt-auto border-t border-sidebar-border/60 pt-3 flex flex-col gap-2", collapsed ? "px-2" : "px-3")}>
+      <div className={cn("mt-auto border-t border-sidebar-border/60 pt-3 flex flex-col gap-2", collapsed ? "px-1.5 sm:px-2 items-center" : "px-3")}>
         {/* User Account Details (Clickable -> Redirects to Settings page) */}
         <Link
           to="/admin/settings"
-          title={collapsed ? `${user?.name} — Settings` : "Click to view profile & settings"}
+          title={collapsed ? `${user?.name || "Account"} — Settings` : "Click to view profile & settings"}
           className={cn(
-            "flex items-center gap-3 rounded-xl p-1.5 transition-all duration-200 hover:bg-sidebar-accent/70 group cursor-pointer",
-            collapsed && "justify-center p-1"
+            "flex items-center gap-3 rounded-xl p-1.5 transition-all duration-200 hover:bg-sidebar-accent/70 group cursor-pointer w-full",
+            collapsed && "justify-center p-0 h-9 w-9 sm:h-10 sm:w-10"
           )}
         >
           <div
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-sm shadow-sm ring-2 ring-primary/30 group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+            className="flex size-8 sm:size-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-xs sm:text-sm shadow-sm ring-2 ring-primary/30 group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
           >
             {userInitial}
           </div>
@@ -133,7 +135,7 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
           title={collapsed ? "Logout" : undefined}
           className={cn(
             "flex items-center gap-3 rounded-xl transition-all duration-200 text-destructive/90 hover:bg-destructive/10 hover:text-destructive",
-            collapsed ? "h-10 w-10 justify-center mx-auto" : "w-full px-3.5 py-2.5 text-sm font-medium"
+            collapsed ? "h-9 w-9 sm:h-10 sm:w-10 justify-center p-0 mx-auto" : "w-full px-3.5 py-2.5 text-sm font-medium"
           )}
         >
           <LogOut className={cn("shrink-0", collapsed ? "size-5" : "size-4")} />
@@ -145,52 +147,28 @@ export function AppShell({ items, children, scopeLabel }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Desktop Sidebar Rail */}
+      {/* Mobile Backdrop when expanded */}
+      {!collapsed && (
+        <div
+          className="fixed inset-0 z-20 bg-foreground/40 backdrop-blur-xs lg:hidden"
+          onClick={() => setCollapsed(true)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar Rail (Mobile & Desktop) */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 hidden border-r border-sidebar-border bg-sidebar transition-all duration-300 lg:block",
-          collapsed ? "w-16" : "w-64"
+          "fixed inset-y-0 left-0 z-30 border-r border-sidebar-border bg-sidebar transition-all duration-300",
+          collapsed ? "w-14 sm:w-16" : "w-64 shadow-2xl lg:shadow-none"
         )}
       >
         {sidebarInner}
       </aside>
 
-      {/* Mobile Drawer (Always full width when opened on mobile) */}
-      {open && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            className="absolute inset-0 bg-foreground/40 backdrop-blur-xs"
-            onClick={() => setOpen(false)}
-            aria-hidden
-          />
-          <div className="absolute inset-y-0 left-0 w-64 shadow-xl">
-            <button
-              aria-label="Close menu"
-              onClick={() => setOpen(false)}
-              className="absolute right-2 top-3 z-10 rounded-md p-2 text-sidebar-foreground/70 hover:text-sidebar-accent-foreground"
-            >
-              <X className="size-4" />
-            </button>
-            {sidebarInner}
-          </div>
-        </div>
-      )}
-
       {/* Main Content View with Dynamic Left Padding */}
-      <div className={cn("transition-all duration-300", collapsed ? "lg:pl-16" : "lg:pl-64")}>
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/85 px-4 py-3 backdrop-blur lg:hidden">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" aria-label="Open menu" onClick={() => setOpen(true)}>
-              <Menu className="size-5" />
-            </Button>
-            <img src="/logo.png" alt="MIMS Logo" className="h-7 w-7 shrink-0 rounded-md object-contain" />
-            <span className="font-display text-sm font-semibold">MIMS</span>
-          </div>
-          <div className="flex size-7 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-xs">
-            {userInitial}
-          </div>
-        </header>
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">{children}</main>
+      <div className={cn("transition-all duration-300 min-h-screen", collapsed ? "pl-14 sm:pl-16" : "pl-14 sm:pl-16 lg:pl-64")}>
+        <main className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-6 lg:px-8 lg:py-8">{children}</main>
       </div>
     </div>
   );
